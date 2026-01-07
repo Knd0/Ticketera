@@ -1,0 +1,31 @@
+<div class="hero">
+    <div class="hero-content">
+        <h1>All your tickets in one place.</h1>
+        <p>Find the best events near you or create your own.</p>
+    </div>
+</div>
+
+<div class="container" style="margin-top: 2rem;">
+    <div class="header-actions">
+        <h2>Upcoming Events</h2>
+        <div class="filters">
+            <button (click)="filterCategory('All')" class="btn btn-filter">All</button>
+            <button (click)="filterCategory('Concert')" class="btn btn-filter">Concerts</button>
+            <button (click)="filterCategory('Theater')" class="btn btn-filter">Theater</button>
+            <button (click)="filterCategory('Party')" class="btn btn-filter">Party</button>
+        </div>
+    </div>
+
+    <div class="event-grid">
+        <div class="event-card" *ngFor="let event of events$ | async">
+            <div class="event-image"
+                [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder.jpg') + ')'"></div>
+            <div class="event-content">
+                <h3>{{ event.title }}</h3>
+                <p class="date">{{ event.date | date:'mediumDate' }}</p>
+                <p class="location">{{ event.location }}</p>
+                <a [routerLink]="['/event', event.id]" class="btn btn-primary btn-full">Get Tickets</a>
+            </div>
+        </div>
+    </div>
+</div>

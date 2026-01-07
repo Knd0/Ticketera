@@ -1,0 +1,227 @@
+.wizard-container {
+    max-width: 600px;
+    margin: 3rem auto;
+    padding: 2rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.wizard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    color: var(--text-muted);
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.wizard-step h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.option-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    background: var(--background);
+    transition: all 0.2s;
+}
+
+.option-card:hover {
+    border-color: var(--primary);
+}
+
+.option-card.selected {
+    border-color: var(--primary);
+    background: rgba(147, 51, 234, 0.1);
+    /* Primary tint */
+}
+
+.option-card input {
+    display: none;
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.checkbox-card {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--text-primary);
+}
+
+/* New Batch Styles */
+.animated-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animated-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.batch-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.batch-header-row h4 {
+    margin: 0;
+    color: #334155;
+    font-size: 1.1rem;
+}
+
+.btn-icon-danger {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.btn-icon-danger:hover {
+    background: #fee2e2;
+}
+
+.batch-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.1);
+}
+
+.btn-dashed {
+    width: 100%;
+    padding: 1rem;
+    border: 2px dashed #cbd5e1;
+    background: #f8fafc;
+    color: #64748b;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    margin-top: 1rem;
+}
+
+.btn-dashed:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #475569;
+}
+
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.btn-full {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.review-box {
+    background: var(--background);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+}

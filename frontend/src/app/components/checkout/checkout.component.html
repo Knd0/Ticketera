@@ -1,0 +1,73 @@
+<div class="container" style="max-width: 600px; margin-top: 3rem;">
+
+    <!-- Success View -->
+    <div *ngIf="purchaseSuccess" class="success-container">
+        <div class="success-header">
+            <h2>🎉 Purchase Successful!</h2>
+            <p>Your order ID: {{ purchasedOrder?.id }}</p>
+            <p class="email-note">We sent a copy to {{ purchasedOrder?.customerEmail }}</p>
+        </div>
+
+        <div class="tickets-list">
+            <div class="ticket-card" *ngFor="let ticket of purchasedTickets; let i = index">
+                <div class="ticket-info">
+                    <h3>Ticket #{{ i + 1 }}</h3>
+                    <p class="code">Code: {{ ticket.code }}</p>
+                </div>
+                <div class="qr-code">
+                    <img [src]="ticket.qrCode" alt="QR Code">
+                </div>
+                <a [href]="ticket.qrCode" download="ticket-{{ticket.code}}.png"
+                    class="btn btn-sm btn-outline">Download</a>
+            </div>
+        </div>
+
+        <a routerLink="/" class="btn btn-primary btn-full" style="margin-top: 2rem;">Back to Home</a>
+    </div>
+
+    <!-- Checkout Form -->
+    <div *ngIf="!purchaseSuccess">
+        <h2>Checkout</h2>
+        <div class="checkout-summary" *ngIf="eventId">
+            <p><strong>Event:</strong> {{ eventId }} (Loading details...)</p>
+            <p><strong>Ticket:</strong> Batch {{ batchId }} x {{ quantity }}</p>
+        </div>
+
+        <form [formGroup]="checkoutForm" (ngSubmit)="onSubmit()" class="checkout-form">
+            <div class="input-group">
+                <label class="input-label">Full Name</label>
+                <input type="text" formControlName="fullName" class="input-field" placeholder="John Doe">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Email (for tickets)</label>
+                <input type="email" formControlName="email" class="input-field" placeholder="john@example.com">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">WhatsApp (for tickets)</label>
+                <input type="tel" formControlName="phone" class="input-field" placeholder="+1 234 567 8900">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Document ID (DNI)</label>
+                <input type="text" formControlName="documentId" class="input-field" placeholder="12345678">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Promo Code</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" formControlName="promoCode" class="input-field" placeholder="DISCOUNT10">
+                    <button type="button" (click)="applyPromo()" class="btn btn-outline">Apply</button>
+                </div>
+                <p *ngIf="promoApplied" style="color: green; font-size: 0.9rem; margin-top: 5px;">
+                    {{ discountPercentage }}% Discount Applied!
+                </p>
+            </div>
+
+            <button type="submit" [disabled]="checkoutForm.invalid" class="btn btn-primary btn-full">
+                Pay & Get Tickets
+            </button>
+        </form>
+    </div>
+</div>

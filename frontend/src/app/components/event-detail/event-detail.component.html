@@ -1,0 +1,52 @@
+<div class="container" *ngIf="event$ | async as event; else loadingOrError">
+    <div class="event-header" [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder.jpg') + ')'">
+        <div class="header-content">
+            <h1>{{ event.title }}</h1>
+            <p class="date">{{ event.date | date:'fullDate' }}</p>
+            <p class="location">{{ event.location }}</p>
+        </div>
+    </div>
+
+    <div class="content-wrapper">
+        <div class="main-info">
+            <h2>About this event</h2>
+            <p>{{ event.description }}</p>
+        </div>
+
+        <div class="tickets-sidebar">
+            <h3>Select Tickets</h3>
+            <div class="batch-list">
+                <div class="batch-item" *ngFor="let batch of event.batches"
+                    [class.selected]="selectedBatchId === batch.id" (click)="selectBatch(batch.id)">
+                    <div class="batch-info">
+                        <span class="batch-name">{{ batch.name }}</span>
+                        <span class="batch-price">\${{ batch.price }}</span>
+                    </div>
+                    <div class="batch-availability">
+                        {{ batch.totalQuantity - (batch.soldQuantity || 0) }} remaining
+                    </div>
+                </div>
+            </div>
+
+            <div class="quantity-selector" *ngIf="selectedBatchId">
+                <button (click)="decrement()" class="qty-btn">-</button>
+                <span class="qty-val">{{ quantity }}</span>
+                <button (click)="increment()" class="qty-btn">+</button>
+            </div>
+
+            <a [routerLink]="['/checkout']"
+                [queryParams]="{ eventId: event.id, batchId: selectedBatchId, quantity: quantity }"
+                class="btn btn-primary btn-full buy-btn" [class.disabled]="!selectedBatchId">
+                Buy Tickets
+            </a>
+        </div>
+    </div>
+</div>
+
+<ng-template #loadingOrError>
+    <div class="container" style="text-align: center; margin-top: 5rem;">
+        <h2>Loading event info...</h2>
+        <p>If this takes too long, the event might not exist.</p>
+        <a routerLink="/" class="btn btn-outline">Back to Home</a>
+    </div>
+</ng-template>

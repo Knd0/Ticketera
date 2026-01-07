@@ -1,0 +1,33 @@
+.login-wrapper {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login-card {
+  background: var(--surface);
+  padding: 2.5rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid var(--border);
+}
+
+h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+.form-actions {
+  margin-top: 2rem;
+}
+
+.btn-full {
+  width: 100%;
+}

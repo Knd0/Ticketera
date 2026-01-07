@@ -1,0 +1,39 @@
+<nav class="navbar">
+    <div class="navbar-content">
+        <a routerLink="/" class="brand">Ticketera.</a>
+
+        <ul class="nav-links">
+            <!-- Common Links -->
+            <li><a routerLink="/" class="nav-link">Home</a></li>
+
+            <ng-container *ngIf="isLoggedIn$ | async; else publicLinks">
+                <ng-container *ngIf="currentUser$ | async as user">
+
+                    <!-- PRODUCER Links -->
+                    <ng-container *ngIf="user.role === 'producer' || user.role === 'admin'">
+                        <li><a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a></li>
+                        <li><a routerLink="/create-event" routerLinkActive="active" class="nav-link">Create Event</a>
+                        </li>
+                        <li><a routerLink="/scanner" routerLinkActive="active" class="nav-link">Scanner</a></li>
+                    </ng-container>
+
+                    <!-- USER Links -->
+                    <ng-container *ngIf="user.role === 'user'">
+                        <li><a routerLink="/my-tickets" routerLinkActive="active" class="nav-link">My Tickets</a></li>
+                    </ng-container>
+
+                    <li class="user-info">
+                        <span>{{ user.username }} ({{ user.role }})</span>
+                    </li>
+                </ng-container>
+
+                <li><button (click)="logout()" class="nav-link logout-btn">Logout</button></li>
+            </ng-container>
+
+            <ng-template #publicLinks>
+                <li><a routerLink="/login" routerLinkActive="active" class="nav-link">Login</a></li>
+                <li><a routerLink="/register" routerLinkActive="active" class="btn btn-primary btn-sm">Register</a></li>
+            </ng-template>
+        </ul>
+    </div>
+</nav>

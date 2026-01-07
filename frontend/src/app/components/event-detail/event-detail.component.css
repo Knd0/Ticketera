@@ -1,0 +1,105 @@
+.event-header {
+    height: 400px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    border-radius: var(--radius);
+    margin-top: 2rem;
+    display: flex;
+    align-items: flex-end;
+}
+
+.event-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8));
+    border-radius: var(--radius);
+}
+
+.header-content {
+    position: relative;
+    z-index: 1;
+    padding: 2rem;
+    color: white;
+}
+
+.header-content h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    background: none;
+    -webkit-text-fill-color: initial;
+}
+
+.content-wrapper {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 3rem;
+    margin-top: 3rem;
+}
+
+.tickets-sidebar {
+    background: var(--surface);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    align-self: start;
+    position: sticky;
+    top: 100px;
+}
+
+.batch-item {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.batch-item:hover {
+    border-color: var(--primary);
+}
+
+.batch-item.selected {
+    border-color: var(--primary);
+    background-color: #eff6ff;
+}
+
+.batch-info {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.batch-availability {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.quantity-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.qty-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+}
+
+.buy-btn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}

@@ -1,0 +1,95 @@
+.checkout-summary {
+    background: var(--surface);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+}
+
+.checkout-form {
+    background: var(--surface);
+    padding: 2rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.success-container {
+    text-align: center;
+    max-width: 600px;
+    margin: 3rem auto;
+}
+
+.success-header {
+    margin-bottom: 2rem;
+}
+
+.email-note {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.tickets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.ticket-card {
+    background: var(--background);
+    /* Contrast against surface */
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: var(--shadow);
+}
+
+.ticket-info {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.ticket-info h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--primary);
+    font-size: 1.25rem;
+}
+
+.code {
+    font-family: monospace;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.05);
+    /* Subtle highlight */
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.qr-code img {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    background: white;
+    /* QR needs contrast */
+    padding: 10px;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-main);
+}
+
+.btn-outline:hover {
+    background: var(--surface-hover);
+}

@@ -1,0 +1,153 @@
+<div class="wizard-container">
+    <div class="wizard-header">
+        <button (click)="router.navigate(['/dashboard'])" class="back-btn">← Back</button>
+        <span>Step {{ currentStep }} of 6</span>
+    </div>
+
+    <form [formGroup]="eventForm" (ngSubmit)="onSubmit()">
+
+        <!-- Step 1: Event Type -->
+        <div *ngIf="currentStep === 1" class="wizard-step">
+            <h2>Choose Event Type</h2>
+            <div class="options-grid">
+                <label class="option-card" [class.selected]="eventForm.get('eventType')?.value === 'sale'">
+                    <input type="radio" formControlName="eventType" value="sale">
+                    <h3>🎟️ With Sales</h3>
+                    <p>Define price and stock. Sell via Ticketera.</p>
+                </label>
+                <label class="option-card" [class.selected]="eventForm.get('eventType')?.value === 'invite'">
+                    <input type="radio" formControlName="eventType" value="invite">
+                    <h3>📩 Invite Only</h3>
+                    <p>Ideal for private or corporate events.</p>
+                </label>
+            </div>
+        </div>
+
+        <!-- Step 2: Seating -->
+        <div *ngIf="currentStep === 2" class="wizard-step">
+            <h2>Seating Arrangement</h2>
+            <div class="options-grid">
+                <label class="option-card" [class.selected]="eventForm.get('hasNumberedSeating')?.value === false">
+                    <input type="radio" formControlName="hasNumberedSeating" [value]="false">
+                    <h3>❌ No Numbered Seats</h3>
+                    <p>General admission (Standing, Parties, etc.)</p>
+                </label>
+                <label class="option-card" [class.selected]="eventForm.get('hasNumberedSeating')?.value === true">
+                    <input type="radio" formControlName="hasNumberedSeating" [value]="true">
+                    <h3>✅ Numbered Seats</h3>
+                    <p>Theaters, Cinemas, Stadiums.</p>
+                </label>
+            </div>
+        </div>
+
+        <!-- Step 3: Payment Methods -->
+        <div *ngIf="currentStep === 3" class="wizard-step">
+            <h2>Payment Methods</h2>
+            <div class="options-list" formGroupName="paymentMethods">
+                <label class="checkbox-card">
+                    <input type="checkbox" formControlName="mercadoPago"> MercadoPago
+                </label>
+                <label class="checkbox-card">
+                    <input type="checkbox" formControlName="nave"> Nave
+                </label>
+                <label class="checkbox-card">
+                    <input type="checkbox" formControlName="uala"> Ualá Bis
+                </label>
+                <label class="checkbox-card">
+                    <input type="checkbox" formControlName="transfer"> Bank Transfer
+                </label>
+            </div>
+        </div>
+
+        <!-- Step 4: Basic Info -->
+        <div *ngIf="currentStep === 4" class="wizard-step">
+            <h2>Event Details</h2>
+            <div class="form-group">
+                <label>Event Title</label>
+                <input type="text" formControlName="title" placeholder="e.g. Summer Festival 2025">
+            </div>
+            <div class="form-group">
+                <label>Location</label>
+                <input formControlName="location" type="text" placeholder="Venue Name">
+            </div>
+
+            <div class="form-group">
+                <label>Category</label>
+                <select formControlName="category">
+                    <option value="Concert">Concert</option>
+                    <option value="Theater">Theater</option>
+                    <option value="Party">Party</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Date & Time</label>
+                <input type="datetime-local" formControlName="date">
+            </div>
+            <div class="form-group">
+                <label>Image URL</label>
+                <input type="text" formControlName="imageUrl" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea formControlName="description" rows="4"></textarea>
+            </div>
+        </div>
+
+        <!-- Step 5: Batches -->
+        <div *ngIf="currentStep === 5" class="wizard-step">
+            <h2>Ticket Batches & Pricing</h2>
+            <p style="color: #666; margin-bottom: 20px;">Define the types of tickets you want to sell.</p>
+
+            <div formArrayName="batches" class="batches-container">
+                <div *ngFor="let batch of batches.controls; let i=index" [formGroupName]="i"
+                    class="batch-card animated-card">
+                    <div class="batch-header-row">
+                        <h4>Ticket Tier #{{ i + 1 }}</h4>
+                        <button type="button" (click)="removeBatch(i)" class="btn-icon-danger"
+                            title="Remove Batch">✕</button>
+                    </div>
+
+                    <div class="batch-grid">
+                        <div class="input-group">
+                            <label>Name</label>
+                            <input type="text" formControlName="name" placeholder="e.g. Early Bird, VIP">
+                        </div>
+                        <div class="input-group">
+                            <label>Price ($)</label>
+                            <input type="number" formControlName="price" placeholder="0.00">
+                        </div>
+                        <div class="input-group">
+                            <label>Quantity</label>
+                            <input type="number" formControlName="totalQuantity" placeholder="100">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" (click)="addBatch()" class="btn-dashed full-width">+ Add Another Ticket Tier</button>
+        </div>
+
+        <!-- Step 6: Review -->
+        <div *ngIf="currentStep === 6" class="wizard-step">
+            <h2>Review & Publish</h2>
+            <div class="review-box">
+                <h3>{{ eventForm.value.title }}</h3>
+                <p><strong>Location:</strong> {{ eventForm.value.location }}</p>
+                <p><strong>Date:</strong> {{ eventForm.value.date | date:'medium' }}</p>
+                <p><strong>Batches:</strong> {{ batches.length }}</p>
+            </div>
+            <button type="submit" [disabled]="eventForm.invalid" class="btn btn-primary btn-full">Publish Event</button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="wizard-nav">
+            <button type="button" (click)="prevStep()" *ngIf="currentStep > 1" class="btn btn-outline">Previous</button>
+            <button type="button" (click)="nextStep()" *ngIf="currentStep < 6" class="btn btn-primary">Next</button>
+            <!-- Submit is inside Step 6 logic via form ngSubmit, but button is there. -->
+        </div>
+
+    </form>
+</div>
