@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -24,7 +24,14 @@ export class UsersService {
   }
 
   async create(user: Partial<User>): Promise<User> {
-    const newUser = this.usersRepository.create(user);
-    return this.usersRepository.save(newUser);
+    try {
+        const newUser = this.usersRepository.create(user);
+        return await this.usersRepository.save(newUser);
+    } catch (error) {
+        if (error.code === '23505') { // Postgres duplicate key error code
+            throw new ConflictException('Username or Email already exists');
+        }
+        throw error;
+    }
   }
 }

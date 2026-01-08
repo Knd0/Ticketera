@@ -15,6 +15,15 @@ export class User {
   @Column()
   password: string;
 
+  @Column({ nullable: true })
+  fullName: string;
+
+  @Column({ nullable: true })
+  dni: string;
+
+  @Column({ nullable: true })
+  phone: string;
+
   @Column({ default: 'user' })
   role: string; // 'user' | 'producer' | 'admin'
 

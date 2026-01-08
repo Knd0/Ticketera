@@ -18,6 +18,23 @@ async function bootstrap() {
 
   console.log('Seeding data...');
 
+  // 0. Create Admin user
+  const adminHashedPassword = await bcrypt.hash('admin', 10);
+  let adminUser = await userRepository.findOne({ where: { email: 'admin@test.com' } });
+
+  if (!adminUser) {
+    adminUser = userRepository.create({
+      username: 'admin',
+      email: 'admin@test.com',
+      password: adminHashedPassword,
+      role: 'producer' // Admin is a producer
+    });
+    await userRepository.save(adminUser);
+    console.log('Admin user created');
+  } else {
+    console.log('Admin user already exists');
+  }
+
   // 1. Create Prod user
   const hashedPassword = await bcrypt.hash('password', 10);
   let producer = await userRepository.findOne({ where: { email: 'producer@test.com' } });
