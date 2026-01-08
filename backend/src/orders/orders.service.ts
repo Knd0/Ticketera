@@ -97,7 +97,8 @@ export class OrdersService {
         }
       }
 
-      // Apply Promo Code
+      // Apply Promo Code (on Subtotal)
+      let discount = 0;
       if (data.promoCode) {
           const promo = await queryRunner.manager.findOne(PromoCode, { 
               where: { code: data.promoCode }, 
@@ -107,12 +108,14 @@ export class OrdersService {
           if (!promo || !promo.isActive) throw new Error('Invalid promo code');
           if (promo.maxUses && promo.usedCount >= promo.maxUses) throw new Error('Promo code limit reached');
 
-          const discount = totalAmount * (promo.discountPercentage / 100);
-          totalAmount -= discount;
+          discount = totalAmount * (promo.discountPercentage / 100);
           
           promo.usedCount += 1;
           await queryRunner.manager.save(PromoCode, promo);
       }
+
+      const serviceFee = totalAmount * 0.15; // 15% Service Fee
+      const finalTotal = (totalAmount - discount) + serviceFee;
 
       // 2. Create Order
       const order = this.ordersRepo.create({
@@ -120,7 +123,7 @@ export class OrdersService {
         customerEmail: customerInfo?.email || user?.email || 'guest@example.com',
         customerPhone: customerInfo?.phone || '',
         customerDocId: customerInfo?.docId || '',
-        totalAmount: totalAmount,
+        totalAmount: finalTotal,
         status: 'PENDING',
         items: orderItems, // Cascade should handle this if configured, else save manually
         user: user

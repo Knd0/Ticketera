@@ -1,95 +1,275 @@
-.checkout-summary {
+/* Layout */
+.checkout-layout {
+    max-width: 1200px;
+    margin: 3rem auto;
+    color: var(--text-main);
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+}
+
+/* 1. Product Summary Table */
+.product-summary-card {
     background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.product-row {
+    display: grid;
+    grid-template-columns: 3fr 3fr 1fr 1fr 1fr;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.header-row {
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.content-row {
+    padding-top: 1rem;
+}
+
+.col-event {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.event-thumb {
+    width: 60px;
+    height: 60px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+    background-color: #333;
+}
+
+.event-text h4 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.event-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.col-price,
+.col-qty,
+.col-total {
+    font-weight: 600;
+}
+
+/* 2. Timer */
+.timer-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
     padding: 1.5rem;
     border-radius: var(--radius);
     margin-bottom: 2rem;
-    border: 1px solid var(--border);
-}
-
-.checkout-form {
-    background: var(--surface);
-    padding: 2rem;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
-}
-
-.success-container {
     text-align: center;
-    max-width: 600px;
-    margin: 3rem auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
-.success-header {
+.timer-value {
+    color: #f97316;
+    /* Orange Warning */
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+/* 3. Main Grid */
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 2rem;
+}
+
+/* Buyer Form */
+.buyer-section h2 {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--text-main);
+    font-family: inherit;
+}
+
+/* Payment & Summary Side */
+.warning-box {
+    background: rgba(234, 179, 8, 0.1);
+    /* Yellow/Amber tint */
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    color: #fbbf24;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
     margin-bottom: 2rem;
 }
 
-.email-note {
-    color: var(--text-muted);
-    font-size: 0.9rem;
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.payment-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--surface);
+    transition: all 0.2s;
+}
+
+.payment-option:hover {
+    border-color: var(--primary);
+}
+
+.radio-label {
+    margin-left: 0.5rem;
+    font-weight: 500;
+}
+
+.logos {
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.price-summary-box {
+    /* No bg, just text rows like screenshot or maybe boxed? Screenshot has white bg. Let's keep transparent/clean */
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    font-size: 1rem;
+}
+
+.fee-row {
+    color: #10b981;
+    /* Greenish/Teal for fee or just text? Content said green text for service charge? Or just standard. Screenshot has green text for "Cargo por servicio" */
+    color: #10b981;
+}
+
+.summary-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1rem 0;
+}
+
+.total-row {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.btn-pay {
+    width: 100%;
+    background: #eab308;
+    /* Amber/Yellow button */
+    color: black;
+    font-weight: 700;
+    padding: 1rem;
+    border: none;
+    border-radius: 8px;
+    margin-top: 1rem;
+    cursor: pointer;
+}
+
+.btn-pay:hover:not(:disabled) {
+    background: #ca8a04;
+}
+
+.btn-pay:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Success View */
+.success-container {
+    text-align: center;
+    padding: 4rem;
 }
 
 .tickets-list {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    align-items: center;
     margin-top: 2rem;
 }
 
 .ticket-card {
-    background: var(--background);
-    /* Contrast against surface */
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    background: var(--surface);
     padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: var(--shadow);
-}
-
-.ticket-info {
-    margin-bottom: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
     text-align: center;
 }
 
-.ticket-info h3 {
-    margin: 0 0 0.5rem 0;
-    color: var(--primary);
-    font-size: 1.25rem;
-}
-
-.code {
-    font-family: monospace;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    background: rgba(255, 255, 255, 0.05);
-    /* Subtle highlight */
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-}
-
 .qr-code img {
-    width: 200px;
-    height: 200px;
-    margin-bottom: 1rem;
+    width: 150px;
     border-radius: 8px;
-    background: white;
-    /* QR needs contrast */
-    padding: 10px;
+    margin: 10px 0;
 }
 
-.btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-}
+/* Responsive */
+@media (max-width: 768px) {
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
 
-.btn-outline {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-main);
-}
+    .product-row {
+        grid-template-columns: 2fr 1fr;
+        grid-template-rows: auto auto;
+    }
 
-.btn-outline:hover {
-    background: var(--surface-hover);
+    /* Simplified mobile table */
+    .col-price,
+    .col-qty,
+    .col-total {
+        display: none;
+    }
+
+    /* Hide details on mobile or stack them */
+    /* Better mobile adaptation needed if strictly required, but for now desktop focus */
 }

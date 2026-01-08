@@ -24,7 +24,10 @@
 
     --border: #334155;
     /* Slate 700 */
-    --radius: 12px;
+    --radius: 24px;
+    /* Increased for Bento Style */
+    --radius-sm: 12px;
+    --radius-lg: 32px;
 
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
@@ -32,6 +35,11 @@
 
     --glass-bg: rgba(30, 41, 59, 0.7);
     --glass-border: rgba(255, 255, 255, 0.1);
+
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
 }
 
 * {
