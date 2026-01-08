@@ -1,31 +1,82 @@
-<div class="hero">
-    <div class="hero-content">
-        <h1>All your tickets in one place.</h1>
-        <p>Find the best events near you or create your own.</p>
-    </div>
-</div>
+<div class="home-layout fade-in">
 
-<div class="container" style="margin-top: 2rem;">
-    <div class="header-actions">
-        <h2>Upcoming Events</h2>
-        <div class="filters">
-            <button (click)="filterCategory('All')" class="btn btn-filter">All</button>
-            <button (click)="filterCategory('Concert')" class="btn btn-filter">Concerts</button>
-            <button (click)="filterCategory('Theater')" class="btn btn-filter">Theater</button>
-            <button (click)="filterCategory('Party')" class="btn btn-filter">Party</button>
+    <!-- Left Ad Banner -->
+    <aside class="ad-banner left-banner desktop-only">
+        <div class="ad-placeholder">
+            <span>Publicidad</span>
         </div>
-    </div>
+    </aside>
 
-    <div class="event-grid">
-        <div class="event-card" *ngFor="let event of events$ | async">
-            <div class="event-image"
-                [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder.jpg') + ')'"></div>
-            <div class="event-content">
-                <h3>{{ event.title }}</h3>
-                <p class="date">{{ event.date | date:'mediumDate' }}</p>
-                <p class="location">{{ event.location }}</p>
-                <a [routerLink]="['/event', event.id]" class="btn btn-primary btn-full">Get Tickets</a>
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <header class="home-header">
+            <div class="brand-badge">
+                <span class="logo-icon">🎫</span>
+                <span class="logo-text">Ticketera</span>
             </div>
+            <!-- Categories could go here or below featured -->
+        </header>
+
+        <!-- 1. Featured Section (Top Selling) -->
+        <section class="featured-section" *ngIf="featuredEvents.length > 0">
+            <h2 class="section-title">🔥 Top Selling</h2>
+            <div class="featured-grid">
+                <div class="featured-card" *ngFor="let event of featuredEvents" [routerLink]="['/event', event.id]">
+                    <div class="featured-bg"
+                        [style.background-image]="'url(' + (event.imageUrl || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80') + ')'">
+                    </div>
+                    <div class="featured-content glass-effect">
+                        <span class="badge-hot">Selling Fast</span>
+                        <h3>{{ event.title }}</h3>
+                        <p>{{ event.date | date:'mediumDate' }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Categories Bar -->
+        <div class="categories-bar">
+            <button class="cat-pill" *ngFor="let cat of categories" (click)="filterCategory(cat.name)">
+                {{ cat.icon }} {{ cat.name }}
+            </button>
+            <button class="cat-pill" (click)="filterCategory('Redo')">All</button>
         </div>
-    </div>
+
+        <!-- 3. Feed List (Scroll) -->
+        <section class="feed-section">
+            <h2 class="section-title">Upcoming Events</h2>
+
+            <div class="feed-list">
+                <a [routerLink]="['/event', event.id]" class="feed-card" *ngFor="let event of feedEvents">
+                    <div class="feed-image"
+                        [style.background-image]="'url(' + (event.imageUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80') + ')'">
+                    </div>
+                    <div class="feed-info">
+                        <div class="feed-header">
+                            <h4>{{ event.title }}</h4>
+                            <span class="feed-price">From $20</span>
+                        </div>
+                        <p class="feed-date">{{ event.date | date:'fullDate' }} • {{ event.location }}</p>
+                        <!-- Description preview could go here -->
+                    </div>
+                    <button class="btn btn-sm btn-outline">Ver Entradas</button>
+                </a>
+            </div>
+
+            <!-- "Infinite Scroll" Loader Placeholder -->
+            <div class="loader-trigger">
+                <p>Scroll for more...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Right Ad Banner -->
+    <aside class="ad-banner right-banner desktop-only">
+        <div class="ad-placeholder">
+            <span>Publicidad</span>
+        </div>
+    </aside>
+
 </div>
