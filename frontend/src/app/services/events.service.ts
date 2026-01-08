@@ -32,8 +32,6 @@ export class EventsService {
   }
 
   createEvent(eventData: any): Observable<Event> {
-    const token = localStorage.getItem('access_token');
-    const headers = { Authorization: `Bearer ${token}` };
-    return this.http.post<Event>(this.apiUrl, eventData, { headers });
+    return this.http.post<Event>(this.apiUrl, eventData);
   }
 }

@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -13,6 +14,7 @@ import { AuthService } from '../../services/auth.service';
 export class LoginComponent {
   fb = inject(FormBuilder);
   authService = inject(AuthService);
+  router = inject(Router);
 
   loginForm: FormGroup = this.fb.group({
     username: ['', Validators.required],
@@ -25,6 +27,9 @@ export class LoginComponent {
     if (this.loginForm.valid) {
       const { username, password } = this.loginForm.value;
       this.authService.login({ username, password }).subscribe({
+        next: () => {
+            this.router.navigate(['/dashboard']);
+        },
         error: (err) => {
           console.error(err);
           this.error = 'Invalid credentials';
