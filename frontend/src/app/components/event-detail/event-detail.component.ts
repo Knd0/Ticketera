@@ -15,15 +15,33 @@ export class EventDetailComponent {
   route = inject(ActivatedRoute);
   eventsService = inject(EventsService);
   
+  event: any = null; // Store event data for access in methods
+  
   event$: Observable<Event> = this.route.paramMap.pipe(
     switchMap(params => this.eventsService.getEvent(params.get('id')!))
   );
+
+  constructor() {
+      // Subscribe to save event data locally
+      this.event$.subscribe(ev => this.event = ev);
+  }
 
   selectedBatchId: string | null = null;
   quantity: number = 1;
 
   selectBatch(batchId: string) {
+    const batch = this.event?.batches?.find((b: any) => b.id === batchId);
+    if (batch && this.isSoldOut(batch)) return; // Prevent selection if sold out
     this.selectedBatchId = batchId;
+  }
+
+  isSoldOut(batch: any): boolean {
+      if (batch.isManualSoldOut) return true;
+      // If we had remainingQuantity property:
+      if (batch.totalQuantity && batch.soldQuantity && (batch.totalQuantity - batch.soldQuantity <= 0)) {
+          return true;
+      }
+      return false;
   }
 
   increment() { this.quantity++; }

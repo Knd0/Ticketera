@@ -133,11 +133,11 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
                   <div class="batches-section">
                       <div class="section-header-row">
                           <h3>Ticket Tiers & Batches</h3>
-                          <!-- Future: Add 'Add Batch' button here -->
+                          <button (click)="addBatch()" class="btn btn-sm btn-outline">+ Add Batch</button>
                       </div>
                       
                       <div class="batches-list">
-                          <div *ngFor="let batch of editingEvent.batches" class="batch-edit-card">
+                          <div *ngFor="let batch of editingEvent.batches" class="batch-edit-card" [class.sold-out-edit]="batch.isManualSoldOut">
                               
                               <div class="batch-grid">
                                   <div class="input-group name-col">
@@ -286,8 +286,30 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
     .section-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .section-header-row h3 { margin: 0; font-size: 1.1rem; color: var(--text-main); }
 
-    .batch-edit-card { background: #0f172a; border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; transition: border-color 0.2s; }
+    .batch-edit-card { background: #0f172a; border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; transition: border-color 0.2s; position: relative; }
     .batch-edit-card:hover { border-color: var(--text-muted); }
+    
+    /* Sold Out Edit State */
+    .batch-edit-card.sold-out-edit { 
+        border-color: #ef4444; 
+        background: rgba(239, 68, 68, 0.05); 
+    }
+    .batch-edit-card.sold-out-edit::after {
+        content: 'SOLD OUT';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ef4444;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        pointer-events: none;
+    }
+    .batch-edit-card.sold-out-edit .input-group input:not([type="checkbox"]) {
+        opacity: 0.5;
+    }
     
     .batch-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 1rem; }
     .name-col { grid-column: 1 / 2; }
@@ -439,6 +461,17 @@ export class ProducerDashboardComponent {
   }
 
   // Actions
+  addBatch() {
+      if (!this.editingEvent.batches) this.editingEvent.batches = [];
+      this.editingEvent.batches.push({
+          name: '',
+          price: 0,
+          totalQuantity: 100,
+          soldQuantity: 0,
+          isManualSoldOut: false
+      });
+  }
+
   editEvent(event: any) {
       this.editingEvent = JSON.parse(JSON.stringify(event)); // Deep copy
   }

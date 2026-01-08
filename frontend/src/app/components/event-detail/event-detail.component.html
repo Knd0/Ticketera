@@ -17,13 +17,16 @@
             <h3>Select Tickets</h3>
             <div class="batch-list">
                 <div class="batch-item" *ngFor="let batch of event.batches"
-                    [class.selected]="selectedBatchId === batch.id" (click)="selectBatch(batch.id)">
+                    [class.selected]="selectedBatchId === batch.id" [class.sold-out]="isSoldOut(batch)"
+                    (click)="!isSoldOut(batch) && selectBatch(batch.id)">
                     <div class="batch-info">
                         <span class="batch-name">{{ batch.name }}</span>
                         <span class="batch-price">\${{ batch.price }}</span>
                     </div>
                     <div class="batch-availability">
-                        {{ batch.totalQuantity - (batch.soldQuantity || 0) }} remaining
+                        <span *ngIf="isSoldOut(batch)" class="badge-sold-out">SOLD OUT</span>
+                        <span *ngIf="!isSoldOut(batch)">{{ batch.totalQuantity - (batch.soldQuantity || 0) }}
+                            remaining</span>
                     </div>
                 </div>
             </div>

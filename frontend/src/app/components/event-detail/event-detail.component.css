@@ -103,3 +103,26 @@
     opacity: 0.5;
     pointer-events: none;
 }
+
+/* Sold Out Styles */
+.batch-item.sold-out {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: transparent;
+}
+
+.batch-item.sold-out:hover {
+    background: var(--surface);
+    border-color: transparent;
+}
+
+.badge-sold-out {
+    background: #ef4444;
+    /* Red 500 */
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
