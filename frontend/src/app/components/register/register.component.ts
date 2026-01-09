@@ -47,7 +47,12 @@ import { AuthService } from '../../services/auth.service';
         
         <div class="form-group">
           <label>Password</label>
-          <input type="password" formControlName="password" placeholder="Create a secure password">
+          <div class="password-wrapper">
+            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Create a secure password">
+            <button type="button" class="password-toggle" (click)="togglePassword()">
+                <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+            </button>
+          </div>
         </div>
 
         <!-- USER SPECIFIC -->
@@ -174,11 +179,16 @@ export class RegisterComponent {
   fb = inject(FormBuilder);
   authService = inject(AuthService);
   router = inject(Router);
-  
+
   loading = false;
   error = '';
   currentStep = 1;
   isProducer = false;
+  showPassword = false;
+
+  togglePassword() {
+    this.showPassword = !this.showPassword;
+  }
 
   registerForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -196,51 +206,51 @@ export class RegisterComponent {
   });
 
   selectRole(role: 'user' | 'producer') {
-      this.isProducer = role === 'producer';
-      this.currentStep = 2;
-      this.updateValidators();
+    this.isProducer = role === 'producer';
+    this.currentStep = 2;
+    this.updateValidators();
   }
 
   updateValidators() {
-      const userFields = ['dni'];
-      // const prodFields = ['description'];
+    const userFields = ['dni'];
+    // const prodFields = ['description'];
 
-      if (this.isProducer) {
-          // Add required to producer fields
-          this.registerForm.get('dni')?.clearValidators();
-      } else {
-          // Add required to user fields
-          this.registerForm.get('dni')?.setValidators([Validators.required]);
-      }
-      // Update validity status
-      this.registerForm.get('dni')?.updateValueAndValidity();
-      // this.registerForm.get('cuit')?.updateValueAndValidity();
+    if (this.isProducer) {
+      // Add required to producer fields
+      this.registerForm.get('dni')?.clearValidators();
+    } else {
+      // Add required to user fields
+      this.registerForm.get('dni')?.setValidators([Validators.required]);
+    }
+    // Update validity status
+    this.registerForm.get('dni')?.updateValueAndValidity();
+    // this.registerForm.get('cuit')?.updateValueAndValidity();
   }
 
   onSubmit() {
     if (this.registerForm.valid) {
       this.loading = true;
       this.error = '';
-      
+
       const formVal = this.registerForm.value;
-      
+
       // Auto-generate username from email
       const username = formVal.email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
 
       const payload = {
-          ...formVal,
-          username,
-          role: this.isProducer ? 'producer' : 'user'
+        ...formVal,
+        username,
+        role: this.isProducer ? 'producer' : 'user'
       };
-      
+
       // Clean up empty fields based on role if needed, or backend handles nulls
       if (!this.isProducer) {
-          // delete payload.cuit; 
-          delete payload.website;
-          delete payload.description;
-          delete payload.profileImageUrl;
+        // delete payload.cuit; 
+        delete payload.website;
+        delete payload.description;
+        delete payload.profileImageUrl;
       }
-      
+
       this.authService.register(payload).subscribe({
         next: () => {
           this.loading = false;
@@ -251,14 +261,14 @@ export class RegisterComponent {
           this.loading = false;
           console.error(err);
           if (err.error && err.error.message) {
-              this.error = err.error.message;
+            this.error = err.error.message;
           } else {
-             this.error = 'Registration failed. Try a different email.';
+            this.error = 'Registration failed. Try a different email.';
           }
         }
       });
     } else {
-        this.registerForm.markAllAsTouched();
+      this.registerForm.markAllAsTouched();
     }
   }
 }

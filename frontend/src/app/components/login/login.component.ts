@@ -22,13 +22,18 @@ export class LoginComponent {
   });
 
   error: string | null = null;
+  showPassword = false;
+
+  togglePassword() {
+    this.showPassword = !this.showPassword;
+  }
 
   onSubmit() {
     if (this.loginForm.valid) {
       const { email, password } = this.loginForm.value;
       this.authService.login({ email, password }).subscribe({
         next: () => {
-            this.router.navigate(['/dashboard']);
+          this.router.navigate(['/dashboard']);
         },
         error: (err) => {
           console.error(err);

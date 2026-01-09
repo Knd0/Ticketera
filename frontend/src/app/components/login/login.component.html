@@ -8,7 +8,12 @@
       </div>
       <div class="input-group">
         <label for="password" class="input-label">Password</label>
-        <input id="password" type="password" formControlName="password" class="input-field" placeholder="••••••••" />
+        <div class="password-wrapper">
+          <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" class="input-field" placeholder="••••••••" />
+          <button type="button" class="password-toggle" (click)="togglePassword()">
+            <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+          </button>
+        </div>
       </div>
       <div *ngIf="error" class="error">{{ error }}</div>
       <div class="form-actions">
