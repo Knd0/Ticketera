@@ -57,6 +57,10 @@
                     <input type="checkbox" formControlName="transfer"> Bank Transfer
                 </label>
             </div>
+            <div *ngIf="eventForm.get('paymentMethods')?.invalid && eventForm.get('paymentMethods')?.touched"
+                class="error-msg">
+                Please select at least one payent method.
+            </div>
         </div>
 
         <!-- Step 4: Basic Info -->
@@ -65,10 +69,14 @@
             <div class="form-group">
                 <label>Event Title</label>
                 <input type="text" formControlName="title" placeholder="e.g. Summer Festival 2025">
+                <span *ngIf="eventForm.get('title')?.invalid && eventForm.get('title')?.touched" class="error-msg">Title
+                    is required.</span>
             </div>
             <div class="form-group">
                 <label>Location</label>
                 <input formControlName="location" type="text" placeholder="Venue Name">
+                <span *ngIf="eventForm.get('location')?.invalid && eventForm.get('location')?.touched"
+                    class="error-msg">Location is required.</span>
             </div>
 
             <div class="form-group">
@@ -80,11 +88,17 @@
                     <option value="Sports">Sports</option>
                     <option value="Other">Other</option>
                 </select>
+                <span *ngIf="eventForm.get('category')?.invalid && eventForm.get('category')?.touched"
+                    class="error-msg">Category is required.</span>
             </div>
 
             <div class="form-group">
                 <label>Date & Time</label>
                 <input type="datetime-local" formControlName="date">
+                <span *ngIf="eventForm.get('date')?.hasError('required') && eventForm.get('date')?.touched"
+                    class="error-msg">Date is required.</span>
+                <span *ngIf="eventForm.get('date')?.hasError('pastDate') && eventForm.get('date')?.touched"
+                    class="error-msg">Date cannot be in the past.</span>
             </div>
             <div class="form-group">
                 <label>Image URL</label>

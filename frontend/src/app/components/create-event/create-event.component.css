@@ -231,3 +231,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     border-radius: var(--radius);
     margin-bottom: 1rem;
 }
+
+.error-msg {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    display: block;
+}

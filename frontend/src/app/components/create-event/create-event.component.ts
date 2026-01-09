@@ -1,8 +1,21 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule, FormArray, FormGroup } from '@angular/forms';
+import { FormBuilder, Validators, ReactiveFormsModule, FormArray, FormGroup, ValidatorFn, AbstractControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EventsService } from '../../services/events.service';
+
+const atLeastOneSelected: ValidatorFn = (control: AbstractControl) => {
+  const group = control as FormGroup;
+  const hasAtLeastOne = Object.keys(group.controls).some(k => group.controls[k].value === true);
+  return hasAtLeastOne ? null : { required: true };
+};
+
+const futureDate: ValidatorFn = (control: AbstractControl) => {
+  if (!control.value) return null;
+  const inputDate = new Date(control.value);
+  const now = new Date();
+  return inputDate > now ? null : { pastDate: true };
+};
 
 @Component({
   selector: 'app-create-event',
@@ -27,12 +40,12 @@ export class CreateEventComponent {
       nave: [false],
       uala: [false],
       transfer: [false]
-    }),
+    }, { validators: atLeastOneSelected }),
     title: ['', Validators.required],
     description: [''],
     location: ['', Validators.required],
     category: ['Concert', Validators.required],
-    date: ['', Validators.required],
+    date: ['', [Validators.required, futureDate]],
     imageUrl: [''],
     batches: this.fb.array([])
   });
@@ -55,6 +68,26 @@ export class CreateEventComponent {
   }
 
   nextStep() {
+    if (this.currentStep === 3) {
+      const paymentGroup = this.eventForm.get('paymentMethods');
+      if (paymentGroup?.invalid) {
+        paymentGroup.markAllAsTouched();
+        return;
+      }
+    }
+
+    if (this.currentStep === 4) {
+      const title = this.eventForm.get('title');
+      const location = this.eventForm.get('location');
+      const category = this.eventForm.get('category');
+      const date = this.eventForm.get('date');
+
+      if (title?.invalid || location?.invalid || category?.invalid || date?.invalid) {
+        this.eventForm.markAllAsTouched(); // Show errors
+        return;
+      }
+    }
+
     this.currentStep++;
     if (this.currentStep === 5 && this.batches.length === 0) {
       this.addBatch(); // Auto-add one batch if arriving at batch step empty
