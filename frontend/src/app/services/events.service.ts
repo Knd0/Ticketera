@@ -10,6 +10,13 @@ export interface Event {
   date: Date;
   imageUrl?: string;
   batches?: any[];
+  producer?: {
+    organizationName?: string;
+    fullName: string;
+    profileImageUrl?: string;
+    description?: string;
+    website?: string;
+  };
 }
 
 @Injectable({

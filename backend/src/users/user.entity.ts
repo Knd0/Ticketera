@@ -24,6 +24,22 @@ export class User {
   @Column({ nullable: true })
   phone: string;
 
+  // Producer Specific Fields
+  @Column({ nullable: true })
+  cuit: string; // Tax ID
+
+  @Column({ nullable: true })
+  organizationName: string; // Can be alias for fullName for producers
+
+  @Column({ nullable: true })
+  website: string;
+
+  @Column({ nullable: true })
+  profileImageUrl: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
   @Column({ default: 'user' })
   role: string; // 'user' | 'producer' | 'admin'
 

@@ -10,11 +10,11 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async findOne(username: string): Promise<User | null> {
+  async findOne(identifier: string): Promise<User | null> {
     return this.usersRepository.findOne({ 
         where: [
-            { username },
-            { email: username }
+            { email: identifier },
+            { username: identifier }
         ]
     });
   }

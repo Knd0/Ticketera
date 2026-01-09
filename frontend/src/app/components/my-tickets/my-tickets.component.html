@@ -1,0 +1,94 @@
+<div class="container">
+    <h2>My Tickets</h2>
+
+    <!-- Loading State is implied if streams haven't emitted, but we can check the streams -->
+    <!-- We'll use a wrapping ngIf with 'as' syntax for cleaner handling -->
+
+    <ng-container *ngIf="{ valid: validTickets$ | async, past: pastTickets$ | async } as data">
+
+        <!-- Loading (If both are null/undefined initially) -->
+        <div *ngIf="!data.valid && !data.past" class="empty-state">
+            <p>Loading your tickets...</p>
+        </div>
+
+        <div *ngIf="data.valid || data.past">
+
+            <!-- Valid Tickets Section -->
+            <div *ngIf="data.valid && data.valid.length > 0">
+                <h3 class="section-title">Upcoming Events</h3>
+                <div class="tickets-list">
+                    <div class="ticket-card" *ngFor="let ticket of data.valid">
+                        <div class="ticket-image">
+                            <img [src]="ticket.batch?.event?.imageUrl || 'assets/placeholder-event.jpg'"
+                                alt="Event Cover">
+                            <div class="date-badge">
+                                <span class="day">{{ ticket.batch?.event?.date | date:'dd' }}</span>
+                                <span class="month">{{ ticket.batch?.event?.date | date:'MMM' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="ticket-details">
+                            <h3>{{ ticket.batch?.event?.title || 'Unknown Event' }}</h3>
+                            <div class="ticket-info">
+                                <span><i class="fas fa-map-marker-alt"></i> {{ ticket.batch?.event?.location || 'TBA'
+                                    }}</span>
+                                <span><i class="far fa-clock"></i> {{ ticket.batch?.event?.date | date:'shortTime'
+                                    }}</span>
+                            </div>
+                            <span class="tier-badge">{{ ticket.batch?.name }}</span>
+                        </div>
+
+                        <div class="ticket-qr-section">
+                            <div class="qr-code">
+                                <img *ngIf="ticket.qrCode" [src]="ticket.qrCode" alt="QR Code">
+                            </div>
+                            <div class="status-badge valid">
+                                <i class="fas fa-check-circle"></i> Valid Entry
+                            </div>
+                            <span class="ticket-id">#{{ ticket.code | slice:0:8 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Past/Used Tickets Section -->
+            <div *ngIf="data.past && data.past.length > 0">
+                <h3 class="section-title">History</h3>
+                <div class="tickets-list">
+                    <div class="ticket-card used" *ngFor="let ticket of data.past">
+                        <div class="ticket-image">
+                            <img [src]="ticket.batch?.event?.imageUrl || 'assets/placeholder-event.jpg'"
+                                alt="Event Cover">
+                        </div>
+
+                        <div class="ticket-details">
+                            <h3>{{ ticket.batch?.event?.title }}</h3>
+                            <div class="ticket-info">
+                                <span>{{ ticket.batch?.event?.date | date:'mediumDate' }}</span>
+                            </div>
+                            <span class="tier-badge" style="background: #555;">{{ ticket.batch?.name }}</span>
+                        </div>
+
+                        <div class="ticket-qr-section">
+                            <div class="status-badge used">
+                                {{ ticket.isUsed ? 'Used' : 'Expired' }}
+                            </div>
+                            <span class="ticket-id">#{{ ticket.code | slice:0:8 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div *ngIf="data.valid?.length === 0 && data.past?.length === 0" class="empty-state">
+                <i class="fas fa-ticket-alt"></i>
+                <p>You haven't purchased any tickets yet.</p>
+                <button routerLink="/" class="btn-primary"
+                    style="margin-top: 1rem; padding: 10px 20px; background: #9d4edd; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Browse Events
+                </button>
+            </div>
+
+        </div>
+    </ng-container>
+</div>

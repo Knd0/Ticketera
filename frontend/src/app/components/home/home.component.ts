@@ -27,17 +27,30 @@ export class HomeComponent {
   featuredEvents: Event[] = [];
   feedEvents: Event[] = [];
 
+  // Carousel State
+  currentSlide = 0;
+  autoPlayInterval: any;
+
   ngOnInit() {
       this.loadEvents();
+  }
+
+  ngOnDestroy() {
+      if (this.autoPlayInterval) {
+          clearInterval(this.autoPlayInterval);
+      }
   }
 
   loadEvents(category?: string) {
       this.eventsService.getEvents(category === 'Redo' ? undefined : category).subscribe({
           next: (events) => {
-              // Mock "Top Selling": Take first 2 as featured
-              this.featuredEvents = events.slice(0, 2);
-              this.feedEvents = events.slice(2);
-              this.cdr.detectChanges(); // Force update
+              // Top 6 as featured for carousel (Full Width)
+              this.featuredEvents = events.slice(0, 6);
+              // Show ALL events in the feed as requested
+              this.feedEvents = events;
+              
+              this.startAutoPlay();
+              this.cdr.detectChanges();
           },
           error: (err) => console.error('Error loading events', err)
       });
@@ -45,5 +58,36 @@ export class HomeComponent {
 
   filterCategory(category: string) {
       this.loadEvents(category);
+  }
+
+  // Carousel Methods
+  nextSlide() {
+      this.currentSlide = (this.currentSlide + 1) % this.featuredEvents.length;
+      this.resetAutoPlay();
+  }
+
+  prevSlide() {
+      this.currentSlide = (this.currentSlide - 1 + this.featuredEvents.length) % this.featuredEvents.length;
+      this.resetAutoPlay();
+  }
+
+  setSlide(index: number) {
+      this.currentSlide = index;
+      this.resetAutoPlay();
+  }
+
+  startAutoPlay() {
+      this.resetAutoPlay();
+  }
+
+  resetAutoPlay() {
+      if (this.autoPlayInterval) {
+          clearInterval(this.autoPlayInterval);
+      }
+      // Auto-advance every 5 seconds
+      this.autoPlayInterval = setInterval(() => {
+          this.currentSlide = (this.currentSlide + 1) % this.featuredEvents.length;
+          this.cdr.detectChanges();
+      }, 5000);
   }
 }

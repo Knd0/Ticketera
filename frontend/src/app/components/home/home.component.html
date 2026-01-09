@@ -1,82 +1,89 @@
-<div class="home-layout fade-in">
+<div class="home-container fade-in">
 
-    <!-- Left Ad Banner -->
-    <aside class="ad-banner left-banner desktop-only">
-        <div class="ad-placeholder">
-            <span>Publicidad</span>
-        </div>
-    </aside>
+    <!-- HERO CAROUSEL (Full Width) -->
+    <section class="hero-carousel" *ngIf="featuredEvents.length > 0">
+        <div class="carousel-track" [style.transform]="'translateX(-' + (currentSlide * 100) + '%)'">
 
-    <!-- Main Content -->
-    <main class="main-content">
-
-        <header class="home-header">
-            <div class="brand-badge">
-                <span class="logo-icon">🎫</span>
-                <span class="logo-text">Ticketera</span>
-            </div>
-            <!-- Categories could go here or below featured -->
-        </header>
-
-        <!-- 1. Featured Section (Top Selling) -->
-        <section class="featured-section" *ngIf="featuredEvents.length > 0">
-            <h2 class="section-title">🔥 Top Selling</h2>
-            <div class="featured-grid">
-                <div class="featured-card" *ngFor="let event of featuredEvents" [routerLink]="['/event', event.id]">
-                    <div class="featured-bg"
-                        [style.background-image]="'url(' + (event.imageUrl || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80') + ')'">
+            <div class="carousel-slide" *ngFor="let event of featuredEvents">
+                <!-- Clickable Background -->
+                <a [routerLink]="['/event', event.id]" class="slide-bg-link">
+                    <div class="slide-bg"
+                        [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder-event.jpg') + ')'">
                     </div>
-                    <div class="featured-content glass-effect">
-                        <span class="badge-hot">Selling Fast</span>
-                        <h3>{{ event.title }}</h3>
-                        <p>{{ event.date | date:'mediumDate' }}</p>
+                </a>
+
+                <!-- Cinema Gradient -->
+                <div class="slide-overlay pointer-events-none">
+                    <div class="slide-content container pointer-events-auto">
+                        <span class="badge-featured">Premier Event</span>
+                        <h1 class="slide-title">{{ event.title }}</h1>
+
+                        <div class="slide-meta">
+                            <span class="meta-item">{{ event.date | date:'EEEE, d MMMM' }}</span>
+                            <span class="meta-dot">•</span>
+                            <span class="meta-item">{{ event.location }}</span>
+                        </div>
+
+                        <p class="slide-desc" *ngIf="event.description">{{ event.description | slice:0:150 }}...</p>
+
+                        <div class="slide-actions">
+                            <a [routerLink]="['/event', event.id]" class="btn-hero-primary">
+                                <i class="fas fa-play"></i> Get Tickets
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- 2. Categories Bar -->
+        </div>
+
+        <!-- Carousel Controls -->
+        <button class="carousel-btn prev" (click)="prevSlide()"><i class="fas fa-chevron-left"></i></button>
+        <button class="carousel-btn next" (click)="nextSlide()"><i class="fas fa-chevron-right"></i></button>
+
+        <div class="carousel-indicators">
+            <span *ngFor="let event of featuredEvents; let i = index" [class.active]="i === currentSlide"
+                (click)="setSlide(i)"></span>
+        </div>
+    </section>
+
+    <!-- CONTENT CONTAINER -->
+    <div class="main-content container">
+
+        <!-- Categories Bar -->
         <div class="categories-bar">
             <button class="cat-pill" *ngFor="let cat of categories" (click)="filterCategory(cat.name)">
                 {{ cat.icon }} {{ cat.name }}
             </button>
-            <button class="cat-pill" (click)="filterCategory('Redo')">All</button>
+            <button class="cat-pill" (click)="filterCategory('Redo')">All Categories</button>
         </div>
 
-        <!-- 3. Feed List (Scroll) -->
+
+        <!-- NETFLIX STYLE FEED -->
         <section class="feed-section">
-            <h2 class="section-title">Upcoming Events</h2>
+            <h2 class="section-title">Trending Now</h2>
 
-            <div class="feed-list">
-                <a [routerLink]="['/event', event.id]" class="feed-card" *ngFor="let event of feedEvents">
-                    <div class="feed-image"
-                        [style.background-image]="'url(' + (event.imageUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80') + ')'">
+            <div class="netflix-slider">
+                <a [routerLink]="['/event', event.id]" class="netflix-card" *ngFor="let event of feedEvents">
+                    <div class="card-image"
+                        [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder-event.jpg') + ')'">
                     </div>
-                    <div class="feed-info">
-                        <div class="feed-header">
-                            <h4>{{ event.title }}</h4>
-                            <span class="feed-price">From $20</span>
+                    <div class="card-overlay">
+                        <h4>{{ event.title }}</h4>
+                        <div class="card-meta">
+                            <span>{{ event.date | date:'MMM d' }}</span>
+                            <span class="price-tag">From $20</span>
                         </div>
-                        <p class="feed-date">{{ event.date | date:'fullDate' }} • {{ event.location }}</p>
-                        <!-- Description preview could go here -->
                     </div>
-                    <button class="btn btn-sm btn-outline">Ver Entradas</button>
                 </a>
-            </div>
 
-            <!-- "Infinite Scroll" Loader Placeholder -->
-            <div class="loader-trigger">
-                <p>Scroll for more...</p>
+                <!-- Skeleton / Empty State -->
+                <div *ngIf="feedEvents.length === 0" class="empty-feed">
+                    <p>No more events found.</p>
+                </div>
             </div>
         </section>
 
-    </main>
-
-    <!-- Right Ad Banner -->
-    <aside class="ad-banner right-banner desktop-only">
-        <div class="ad-placeholder">
-            <span>Publicidad</span>
-        </div>
-    </aside>
+    </div>
 
 </div>

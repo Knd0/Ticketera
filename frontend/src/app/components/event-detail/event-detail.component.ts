@@ -46,4 +46,18 @@ export class EventDetailComponent {
 
   increment() { this.quantity++; }
   decrement() { if (this.quantity > 1) this.quantity--; }
+
+  shareEvent() {
+      if (this.event && navigator.share) {
+          navigator.share({
+              title: this.event.title,
+              text: `Check out ${this.event.title} on Ticketera!`,
+              url: window.location.href
+          }).catch(console.error);
+      } else {
+          navigator.clipboard.writeText(window.location.href).then(() => {
+              alert('Link copied to clipboard!'); 
+          });
+      }
+  }
 }

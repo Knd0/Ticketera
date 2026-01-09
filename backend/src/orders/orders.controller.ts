@@ -1,13 +1,26 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Injectable } from '@nestjs/common';
 import { OrdersService } from './orders.service';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
+  handleRequest(err, user, info) {
+    // No error if no user
+    return user;
+  }
+}
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  create(@Body() createOrderDto: any) {
-    return this.ordersService.createOrder(createOrderDto);
+  @UseGuards(OptionalJwtAuthGuard)
+  create(@Body() createOrderDto: any, @Request() req: any) {
+      if (req.user) {
+          createOrderDto.user = req.user;
+      }
+      return this.ordersService.createOrder(createOrderDto);
   }
 
   @Post('webhook/mercadopago')

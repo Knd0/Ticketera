@@ -1,46 +1,49 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { RouterModule } from '@angular/router';
+import { Observable, map, shareReplay, catchError, of } from 'rxjs';
 
 @Component({
   selector: 'app-my-tickets',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="container" style="margin-top: 3rem;">
-      <h2>My Tickets</h2>
-      
-      <div *ngIf="tickets$ | async as tickets; else loading">
-         <div *ngIf="tickets.length === 0">
-            <p>You haven't bought any tickets yet.</p>
-         </div>
-
-         <div class="tickets-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-            <div class="ticket-card" *ngFor="let ticket of tickets" style="border: 1px solid #ddd; padding: 20px; border-radius: 8px; text-align: center;">
-                
-                <h3 style="margin-bottom: 5px;">{{ ticket.batch?.event?.title || 'Unknown Event' }}</h3>
-                <p style="color: #666; margin-bottom: 5px;">{{ ticket.batch?.event?.date | date:'mediumDate' }}</p>
-                <span style="background: #eee; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">
-                    {{ ticket.batch?.name }}
-                </span>
-
-                <div class="qr-code" style="margin-top: 20px;">
-                    <img *ngIf="ticket.qrCode" [src]="ticket.qrCode" alt="QR Code" style="width: 200px; height: 200px;">
-                    <p *ngIf="!ticket.qrCode" style="color: red;">QR not available</p>
-                </div>
-            </div>
-         </div>
-      </div>
-
-      <ng-template #loading>
-        <p>Loading tickets...</p>
-      </ng-template>
-    </div>
-  `
+  imports: [CommonModule, RouterModule],
+  templateUrl: './my-tickets.component.html',
+  styleUrls: ['./my-tickets.component.css']
 })
 export class MyTicketsComponent {
-  http = inject(HttpClient);
+  private http = inject(HttpClient);
   
-  tickets$: Observable<any[]> = this.http.get<any[]>('http://localhost:3000/tickets/my');
+  // Create a shared observable for the tickets data
+  private ticketsRequest$ = this.http.get<any[]>('http://localhost:3000/tickets/my').pipe(
+    shareReplay(1),
+    catchError(err => {
+      console.error('Error fetching tickets', err);
+      return of([]);
+    })
+  );
+
+  loading$ = this.ticketsRequest$.pipe(map(t => false), catchError(() => of(false))); // Simple loader trigger
+
+  validTickets$: Observable<any[]> = this.ticketsRequest$.pipe(
+    map(tickets => {
+      const now = new Date();
+      return tickets.filter(t => {
+        if (t.isUsed) return false;
+        if (!t.batch?.event?.date) return true;
+        return new Date(t.batch.event.date) > now;
+      });
+    })
+  );
+
+  pastTickets$: Observable<any[]> = this.ticketsRequest$.pipe(
+    map(tickets => {
+      const now = new Date();
+      return tickets.filter(t => {
+        if (t.isUsed) return true;
+        if (!t.batch?.event?.date) return false;
+        return new Date(t.batch.event.date) <= now;
+      });
+    })
+  );
 }

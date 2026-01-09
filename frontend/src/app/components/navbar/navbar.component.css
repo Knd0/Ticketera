@@ -39,6 +39,8 @@
     font-size: 0.95rem;
     color: var(--text-muted);
     transition: color 0.2s;
+    cursor: pointer;
+    text-decoration: none;
 }
 
 .nav-link:hover,

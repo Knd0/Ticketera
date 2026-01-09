@@ -126,3 +126,61 @@
     font-weight: 700;
     text-transform: uppercase;
 }
+
+/* Fix Selected State Bug */
+.batch-item.selected {
+    border-color: var(--primary);
+    background-color: rgba(157, 78, 221, 0.15);
+    /* Transparent primary instead of light blue */
+    color: #fff;
+    /* Ensure text remains white */
+}
+
+/* Producer Section */
+.producer-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+
+.producer-card {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    background: var(--surface);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-top: 1rem;
+}
+
+.producer-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+}
+
+.producer-details h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.producer-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.producer-link {
+    color: var(--primary);
+    font-size: 0.9rem;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.producer-link:hover {
+    text-decoration: underline;
+}

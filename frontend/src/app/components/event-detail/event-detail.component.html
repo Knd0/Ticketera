@@ -9,8 +9,30 @@
 
     <div class="content-wrapper">
         <div class="main-info">
+            <div class="actions-bar" style="margin-bottom: 2rem; display: flex; gap: 1rem;">
+                <button (click)="shareEvent()" class="btn btn-outline" style="border-color: #aaa; color: #fff;">
+                    <i class="fas fa-share-alt"></i> Share Event
+                </button>
+            </div>
+
             <h2>About this event</h2>
             <p>{{ event.description }}</p>
+
+            <div class="producer-section" *ngIf="event.producer">
+                <h3>Organizer</h3>
+                <div class="producer-card">
+                    <img [src]="event.producer.profileImageUrl || 'assets/placeholder-avatar.jpg'" alt="Producer Avatar"
+                        class="producer-avatar">
+                    <div class="producer-details">
+                        <h4>{{ event.producer.organizationName || event.producer.fullName }}</h4>
+                        <p class="producer-desc">{{ event.producer.description || 'Verified Organizer' }}</p>
+                        <a *ngIf="event.producer.website" [href]="event.producer.website" target="_blank"
+                            class="producer-link">
+                            Visit Website <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="tickets-sidebar">

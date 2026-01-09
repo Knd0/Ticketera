@@ -3,9 +3,8 @@
     <h2>Welcome Back</h2>
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="input-group">
-        <label for="username" class="input-label">Username</label>
-        <input id="username" type="text" formControlName="username" class="input-field"
-          placeholder="Enter your username" />
+        <label for="email" class="input-label">Email Address</label>
+        <input id="email" type="email" formControlName="email" class="input-field" placeholder="Enter your email" />
       </div>
       <div class="input-group">
         <label for="password" class="input-label">Password</label>

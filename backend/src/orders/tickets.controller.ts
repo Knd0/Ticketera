@@ -18,8 +18,12 @@ export class TicketsController {
   @Get('my')
   @UseGuards(AuthGuard('jwt'))
   async getMyTickets(@Request() req: any) {
+      console.log('getMyTickets User:', req.user); // DEBUG LOG
       const tickets = await this.ticketsRepo.find({
-          where: { order: { user: { id: req.user.id } } },
+          where: [
+              { order: { user: { id: req.user.id } } },
+              { order: { customerEmail: req.user.email } }
+          ],
           relations: ['batch', 'batch.event', 'order'],
           order: { id: 'DESC' }
       });

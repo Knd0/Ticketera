@@ -20,5 +20,7 @@ export const routes: Routes = [
   { path: 'checkout', component: CheckoutComponent },
   { path: 'my-tickets', loadComponent: () => import('./components/my-tickets/my-tickets.component').then(m => m.MyTicketsComponent), canActivate: [authGuard] },
   { path: 'scanner', loadComponent: () => import('./components/scanner/scanner.component').then(m => m.ScannerComponent), canActivate: [authGuard, roleGuard], data: { roles: ['producer', 'admin'] } },
+  { path: 'terms', loadComponent: () => import('./components/terms/terms.component').then(m => m.TermsComponent) },
+  { path: 'privacy', loadComponent: () => import('./components/privacy/privacy.component').then(m => m.PrivacyComponent) },
   { path: '**', redirectTo: '' }
 ];
