@@ -62,7 +62,9 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
               <div *ngFor="let event of activeEvents" class="event-card active-card">
                   <div class="card-header">
                       <h3 title="{{ event.title }}">{{ event.title }}</h3>
-                      <span class="status-badge active">Active</span>
+                      <span class="status-badge" [ngClass]="event.isVisible ? 'active' : 'hidden-badge'">
+                          {{ event.isVisible ? 'Active' : 'Hidden' }}
+                      </span>
                   </div>
                   <p class="event-date">
                      <i class="fas fa-calendar"></i> {{ event.date | date:'mediumDate' }} 
@@ -128,6 +130,19 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
                   <div class="form-group">
                       <label>Description</label>
                       <textarea [(ngModel)]="editingEvent.description" class="form-control" rows="3"></textarea>
+                  </div>
+                  
+                  <div class="form-group">
+                      <label>Visibility</label>
+                      <div class="toggle-container" style="align-items: flex-start; flex-direction: row;">
+                           <label class="toggle-switch">
+                               <input type="checkbox" [(ngModel)]="editingEvent.isVisible">
+                               <span class="slider round"></span>
+                           </label>
+                           <span class="toggle-label" [class.danger]="!editingEvent.isVisible" style="font-size: 0.9rem;">
+                               {{ editingEvent.isVisible ? 'Public (Visible)' : 'Hidden (Private)' }}
+                           </span>
+                      </div>
                   </div>
 
                   <div class="batches-section">
@@ -249,6 +264,7 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
     
     .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
     .status-badge.active { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-badge.hidden-badge { background: rgba(99, 102, 241, 0.1); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
     .status-badge.finished { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
 
     .event-date { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }

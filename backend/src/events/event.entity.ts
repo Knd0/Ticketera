@@ -18,9 +18,12 @@ export class Event {
 
   @Column()
   date: Date;
-  
+
   @Column({ nullable: true })
   category: string; // e.g. Concert, Party, Theater
+
+  @Column({ default: true })
+  isVisible: boolean;
 
   @Column({ nullable: true })
   endDate: Date;
@@ -28,7 +31,7 @@ export class Event {
   @Column({ nullable: true })
   imageUrl: string;
 
-  @ManyToOne('User', 'events') 
+  @ManyToOne('User', 'events')
   producer: User;
 
   @OneToMany(() => Batch, batch => batch.event)

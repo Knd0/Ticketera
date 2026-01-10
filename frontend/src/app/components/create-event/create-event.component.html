@@ -148,6 +148,15 @@
         <div *ngIf="currentStep === 6" class="wizard-step">
             <h2>Review & Publish</h2>
             <div class="review-box">
+                <div class="form-group checkbox-group" style="margin-bottom: 20px;">
+                    <label class="checkbox-container">
+                        <input type="checkbox" formControlName="isVisible">
+                        <span class="checkmark"></span>
+                        Make event public immediately
+                    </label>
+                    <p class="hint">If unchecked, the event will be created as "Hidden" and won't be visible to the
+                        public.</p>
+                </div>
                 <h3>{{ eventForm.value.title }}</h3>
                 <p><strong>Location:</strong> {{ eventForm.value.location }}</p>
                 <p><strong>Date:</strong> {{ eventForm.value.date | date:'medium' }}</p>

@@ -47,6 +47,7 @@ export class CreateEventComponent {
     category: ['Concert', Validators.required],
     date: ['', [Validators.required, futureDate]],
     imageUrl: [''],
+    isVisible: [true],
     batches: this.fb.array([])
   });
 
@@ -112,6 +113,7 @@ export class CreateEventComponent {
         date: new Date(formVal.date!).toISOString(), // Ensure date format
         category: formVal.category,
         imageUrl: formVal.imageUrl,
+        isVisible: formVal.isVisible,
         batches: formVal.batches
       };
 
