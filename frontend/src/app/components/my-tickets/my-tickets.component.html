@@ -17,7 +17,7 @@
             <div *ngIf="data.valid && data.valid.length > 0">
                 <h3 class="section-title">Upcoming Events</h3>
                 <div class="tickets-list">
-                    <div class="ticket-card" *ngFor="let ticket of data.valid">
+                    <div class="ticket-card clickable" *ngFor="let ticket of data.valid" (click)="openQrModal(ticket)">
                         <div class="ticket-image">
                             <img [src]="ticket.batch?.event?.imageUrl || 'assets/placeholder-event.jpg'"
                                 alt="Event Cover">
@@ -91,4 +91,31 @@
 
         </div>
     </ng-container>
+
+    <!-- Full Screen QR Modal -->
+    <div class="qr-modal-backdrop" *ngIf="selectedTicket" (click)="closeQrModal()">
+        <div class="qr-modal-content" (click)="$event.stopPropagation()">
+            <button class="close-modal-btn" (click)="closeQrModal()">×</button>
+
+            <div class="modal-header">
+                <h3>{{ selectedTicket.batch?.event?.title || 'Event' }}</h3>
+                <p>{{ selectedTicket.batch?.event?.date | date:'fullDate' }}</p>
+            </div>
+
+            <div class="qr-container-large">
+                <img [src]="selectedTicket.qrCode" alt="QR Code">
+            </div>
+
+            <div class="ticket-code-display">
+                <span class="label">Ticket Code</span>
+                <span class="code">{{ selectedTicket.code }}</span>
+            </div>
+
+            <div class="modal-status"
+                [ngClass]="{'modal-valid': !selectedTicket.isUsed, 'modal-used': selectedTicket.isUsed}">
+                <i class="fas" [ngClass]="selectedTicket.isUsed ? 'fa-history' : 'fa-check-circle'"></i>
+                {{ selectedTicket.isUsed ? 'Already Used' : 'Ready to Scan' }}
+            </div>
+        </div>
+    </div>
 </div>

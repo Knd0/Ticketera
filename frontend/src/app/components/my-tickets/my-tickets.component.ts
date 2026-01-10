@@ -13,7 +13,7 @@ import { Observable, map, shareReplay, catchError, of } from 'rxjs';
 })
 export class MyTicketsComponent {
   private http = inject(HttpClient);
-  
+
   // Create a shared observable for the tickets data
   private ticketsRequest$ = this.http.get<any[]>('http://localhost:3000/tickets/my').pipe(
     shareReplay(1),
@@ -46,4 +46,14 @@ export class MyTicketsComponent {
       });
     })
   );
+
+  selectedTicket: any = null;
+
+  openQrModal(ticket: any) {
+    this.selectedTicket = ticket;
+  }
+
+  closeQrModal() {
+    this.selectedTicket = null;
+  }
 }

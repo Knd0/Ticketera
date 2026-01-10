@@ -244,3 +244,138 @@ h3.section-title {
         top: -10px;
     }
 }
+
+/* Clickable Ticket */
+.clickable {
+    cursor: pointer;
+}
+
+/* QR Modal - Mobile Optimized */
+.qr-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.qr-modal-content {
+    background: #fff;
+    /* High contrast for scanning */
+    width: 90%;
+    max-width: 400px;
+    border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.close-modal-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #f1f5f9;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    color: #333;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.modal-header h3 {
+    color: #0f172a;
+    font-size: 1.4rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.modal-header p {
+    color: #64748b;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.qr-container-large {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: white;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+}
+
+.qr-container-large img {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+    display: block;
+}
+
+.ticket-code-display {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 2rem;
+}
+
+.ticket-code-display .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #94a3b8;
+    letter-spacing: 1px;
+}
+
+.ticket-code-display .code {
+    font-family: monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 2px;
+}
+
+.modal-status {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.modal-valid {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #d1fae5;
+}
+
+.modal-used {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
