@@ -7,10 +7,10 @@ import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 
 @Component({
-  selector: 'app-producer-dashboard',
-  standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, BaseChartDirective],
-  template: `
+    selector: 'app-producer-dashboard',
+    standalone: true,
+    imports: [CommonModule, RouterLink, FormsModule, BaseChartDirective],
+    template: `
     <div class="container fade-in">
       <header class="dashboard-header">
         <div>
@@ -197,9 +197,9 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
 
     </div>
   `,
-  styles: [`
+    styles: [`
     /* General Layout */
-    .container { margin-top: 2rem; max-width: 1200px; margin-left: auto; margin-right: auto; padding: 0 20px; }
+    .container { margin-top: 2rem; max-width: 1200px; margin-left: auto; margin-right: auto; padding: 0 20px; padding-bottom: 4rem; }
     .fade-in { animation: fadeIn 0.4s ease-in; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -353,152 +353,152 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
   `]
 })
 export class ProducerDashboardComponent {
-  http = inject(HttpClient);
-  cdr = inject(ChangeDetectorRef); // Manually trigger change detection
-  
-  events: any[] = [];
-  activeEvents: any[] = [];
-  finishedEvents: any[] = [];
-  loading = true;
-  saving = false;
-  
-  // Chart Data
-  public barChartData: ChartConfiguration<'bar'>['data'] = {
-    labels: [],
-    datasets: []
-  };
-  public barChartOptions: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom' }
+    http = inject(HttpClient);
+    cdr = inject(ChangeDetectorRef); // Manually trigger change detection
+
+    events: any[] = [];
+    activeEvents: any[] = [];
+    finishedEvents: any[] = [];
+    loading = true;
+    saving = false;
+
+    // Chart Data
+    public barChartData: ChartConfiguration<'bar'>['data'] = {
+        labels: [],
+        datasets: []
+    };
+    public barChartOptions: ChartOptions<'bar'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    };
+
+    // Edit State
+    editingEvent: any = null;
+
+    ngOnInit() {
+        this.loadEvents();
     }
-  };
 
-  // Edit State
-  editingEvent: any = null;
-  
-  ngOnInit() {
-      this.loadEvents();
-  }
+    loadEvents() {
+        this.loading = true;
+        // Force change detection just in case
+        this.cdr.detectChanges();
 
-  loadEvents() {
-      this.loading = true;
-      // Force change detection just in case
-      this.cdr.detectChanges();
+        this.http.get<any[]>('http://localhost:3000/events/my/all').subscribe({
+            next: (data) => {
+                console.log('Events loaded:', data.length); // Debug
+                this.events = data;
+                this.processEvents();
+                this.setupCharts();
+                this.loading = false;
+                this.cdr.detectChanges(); // Ensure UI updates
+            },
+            error: (err) => {
+                console.error('Error loading events:', err);
+                this.loading = false;
+                this.cdr.detectChanges();
+            }
+        });
+    }
 
-      this.http.get<any[]>('http://localhost:3000/events/my/all').subscribe({
-          next: (data) => {
-              console.log('Events loaded:', data.length); // Debug
-              this.events = data;
-              this.processEvents();
-              this.setupCharts();
-              this.loading = false;
-              this.cdr.detectChanges(); // Ensure UI updates
-          },
-          error: (err) => {
-              console.error('Error loading events:', err);
-              this.loading = false;
-              this.cdr.detectChanges();
-          }
-      });
-  }
+    processEvents() {
+        const now = new Date();
+        this.activeEvents = this.events.filter(e => new Date(e.date) >= now);
+        this.finishedEvents = this.events.filter(e => new Date(e.date) < now);
+    }
 
-  processEvents() {
-      const now = new Date();
-      this.activeEvents = this.events.filter(e => new Date(e.date) >= now);
-      this.finishedEvents = this.events.filter(e => new Date(e.date) < now);
-  }
-  
-  setupCharts() {
-      const labels = this.events.map(e => e.title.substring(0, 15) + (e.title.length > 15 ? '...' : ''));
-      const revenueData = this.events.map(e => this.getEventStats(e).revenue);
-      const soldData = this.events.map(e => this.getEventStats(e).sold);
+    setupCharts() {
+        const labels = this.events.map(e => e.title.substring(0, 15) + (e.title.length > 15 ? '...' : ''));
+        const revenueData = this.events.map(e => this.getEventStats(e).revenue);
+        const soldData = this.events.map(e => this.getEventStats(e).sold);
 
-      this.barChartData = {
-          labels: labels,
-          datasets: [
-              { 
-                data: revenueData, 
-                label: 'Revenue ($)', 
-                backgroundColor: 'rgba(37, 99, 235, 0.7)', 
-                hoverBackgroundColor: 'rgba(37, 99, 235, 1)',
-                borderRadius: 4
-              },
-              { 
-                data: soldData, 
-                label: 'Tickets Sold', 
-                backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                hoverBackgroundColor: 'rgba(16, 185, 129, 1)',
-                borderRadius: 4
-              }
-          ]
-      };
-      // Force chart update if needed, but binding should handle it
-  }
+        this.barChartData = {
+            labels: labels,
+            datasets: [
+                {
+                    data: revenueData,
+                    label: 'Revenue ($)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                    hoverBackgroundColor: 'rgba(37, 99, 235, 1)',
+                    borderRadius: 4
+                },
+                {
+                    data: soldData,
+                    label: 'Tickets Sold',
+                    backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                    hoverBackgroundColor: 'rgba(16, 185, 129, 1)',
+                    borderRadius: 4
+                }
+            ]
+        };
+        // Force chart update if needed, but binding should handle it
+    }
 
-  // Stats Helpers
-  getTotalStats(events: any[]) {
-      let sold = 0;
-      let revenue = 0;
-      events.forEach(e => {
-          e.batches.forEach((b: any) => {
-              sold += b.soldQuantity;
-              revenue += (b.soldQuantity * Number(b.price));
-          });
-      });
-      return { sold, revenue };
-  }
-  
-  getEventStats(event: any) {
-      let sold = 0;
-      let revenue = 0;
-      event.batches.forEach((b: any) => {
-          sold += b.soldQuantity;
-          revenue += (b.soldQuantity * Number(b.price));
-      });
-      return { sold, revenue };
-  }
+    // Stats Helpers
+    getTotalStats(events: any[]) {
+        let sold = 0;
+        let revenue = 0;
+        events.forEach(e => {
+            e.batches.forEach((b: any) => {
+                sold += b.soldQuantity;
+                revenue += (b.soldQuantity * Number(b.price));
+            });
+        });
+        return { sold, revenue };
+    }
 
-  // Actions
-  addBatch() {
-      if (!this.editingEvent.batches) this.editingEvent.batches = [];
-      this.editingEvent.batches.push({
-          name: '',
-          price: 0,
-          totalQuantity: 100,
-          soldQuantity: 0,
-          isManualSoldOut: false
-      });
-  }
+    getEventStats(event: any) {
+        let sold = 0;
+        let revenue = 0;
+        event.batches.forEach((b: any) => {
+            sold += b.soldQuantity;
+            revenue += (b.soldQuantity * Number(b.price));
+        });
+        return { sold, revenue };
+    }
 
-  editEvent(event: any) {
-      this.editingEvent = JSON.parse(JSON.stringify(event)); // Deep copy
-  }
+    // Actions
+    addBatch() {
+        if (!this.editingEvent.batches) this.editingEvent.batches = [];
+        this.editingEvent.batches.push({
+            name: '',
+            price: 0,
+            totalQuantity: 100,
+            soldQuantity: 0,
+            isManualSoldOut: false
+        });
+    }
 
-  cancelEdit() {
-      this.editingEvent = null;
-  }
+    editEvent(event: any) {
+        this.editingEvent = JSON.parse(JSON.stringify(event)); // Deep copy
+    }
 
-  saveEvent() {
-      if (!this.editingEvent) return;
-      this.saving = true;
-      this.cdr.detectChanges();
+    cancelEdit() {
+        this.editingEvent = null;
+    }
 
-      this.http.post(`http://localhost:3000/events/${this.editingEvent.id}`, this.editingEvent)
-          .subscribe({
-              next: () => {
-                  this.editingEvent = null;
-                  this.saving = false;
-                  this.loadEvents(); // Reload to show updates
-                  this.cdr.detectChanges();
-              },
-              error: (err) => {
-                  console.error(err);
-                  alert('Error updating event');
-                  this.saving = false;
-                  this.cdr.detectChanges();
-              }
-          });
-  }
+    saveEvent() {
+        if (!this.editingEvent) return;
+        this.saving = true;
+        this.cdr.detectChanges();
+
+        this.http.post(`http://localhost:3000/events/${this.editingEvent.id}`, this.editingEvent)
+            .subscribe({
+                next: () => {
+                    this.editingEvent = null;
+                    this.saving = false;
+                    this.loadEvents(); // Reload to show updates
+                    this.cdr.detectChanges();
+                },
+                error: (err) => {
+                    console.error(err);
+                    alert('Error updating event');
+                    this.saving = false;
+                    this.cdr.detectChanges();
+                }
+            });
+    }
 }
