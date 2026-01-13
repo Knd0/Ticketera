@@ -1,16 +1,19 @@
 <footer class="footer">
     <div class="container footer-content">
         <div class="footer-center">
-            <h3 class="footer-brand">Ticketera</h3>
+            <h3 class="footer-brand">BI-Tickets</h3>
 
             <nav class="footer-nav">
                 <a routerLink="/">Home</a>
                 <a routerLink="/search">Events</a>
                 <a routerLink="/terms">Terms</a>
                 <a routerLink="/privacy">Privacy</a>
+                <button *ngIf="showInstallButton" (click)="installPwa()" class="install-btn">
+                    📲 Install App
+                </button>
             </nav>
 
-            <p class="copyright">&copy; {{ currentYear }} Ticketera. All rights reserved.</p>
+            <p class="copyright">&copy; {{ currentYear }} BI-Tickets. All rights reserved.</p>
         </div>
     </div>
 </footer>

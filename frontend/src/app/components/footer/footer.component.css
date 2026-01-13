@@ -41,6 +41,22 @@
     color: #fff;
 }
 
+.install-btn {
+    background: #333;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.install-btn:hover {
+    background: #555;
+    border-color: #666;
+}
+
 .copyright {
     font-size: 0.75rem;
     color: #333;
