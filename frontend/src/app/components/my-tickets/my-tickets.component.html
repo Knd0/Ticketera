@@ -1,19 +1,16 @@
 <div class="container">
     <h2>My Tickets</h2>
 
-    <!-- Loading State is implied if streams haven't emitted, but we can check the streams -->
-    <!-- We'll use a wrapping ngIf with 'as' syntax for cleaner handling -->
-
     <ng-container *ngIf="{ valid: validTickets$ | async, past: pastTickets$ | async } as data">
 
-        <!-- Loading (If both are null/undefined initially) -->
+        <!-- Loading -->
         <div *ngIf="!data.valid && !data.past" class="empty-state">
             <p>Loading your tickets...</p>
         </div>
 
         <div *ngIf="data.valid || data.past">
 
-            <!-- Valid Tickets Section -->
+            <!-- Valid Tickets -->
             <div *ngIf="data.valid && data.valid.length > 0">
                 <h3 class="section-title">Upcoming Events</h3>
                 <div class="tickets-list">
@@ -36,6 +33,9 @@
                                     }}</span>
                             </div>
                             <span class="tier-badge">{{ ticket.batch?.name }}</span>
+                            <span class="seat-badge" *ngIf="ticket.seatRow">
+                                💺 Row {{ ticket.seatRow }} - Seat {{ ticket.seatNumber }}
+                            </span>
                         </div>
 
                         <div class="ticket-qr-section">
@@ -51,9 +51,9 @@
                 </div>
             </div>
 
-            <!-- Past/Used Tickets Section -->
+            <!-- Past Tickets -->
             <div *ngIf="data.past && data.past.length > 0">
-                <h3 class="section-title">History</h3>
+                <h3 class="section-title" style="margin-top: 2rem;">History</h3>
                 <div class="tickets-list">
                     <div class="ticket-card used" *ngFor="let ticket of data.past">
                         <div class="ticket-image">
@@ -67,6 +67,10 @@
                                 <span>{{ ticket.batch?.event?.date | date:'mediumDate' }}</span>
                             </div>
                             <span class="tier-badge" style="background: #555;">{{ ticket.batch?.name }}</span>
+                            <span class="seat-badge" *ngIf="ticket.seatRow"
+                                style="background: #e5e7eb; color: #6b7280;">
+                                Row {{ ticket.seatRow }} - Seat {{ ticket.seatNumber }}
+                            </span>
                         </div>
 
                         <div class="ticket-qr-section">
@@ -79,17 +83,18 @@
                 </div>
             </div>
 
-            <!-- Empty State -->
-            <div *ngIf="data.valid?.length === 0 && data.past?.length === 0" class="empty-state">
-                <i class="fas fa-ticket-alt"></i>
-                <p>You haven't purchased any tickets yet.</p>
-                <button routerLink="/" class="btn-primary"
-                    style="margin-top: 1rem; padding: 10px 20px; background: #9d4edd; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                    Browse Events
-                </button>
-            </div>
-
         </div>
+
+        <!-- Empty State -->
+        <div *ngIf="data.valid?.length === 0 && data.past?.length === 0" class="empty-state">
+            <i class="fas fa-ticket-alt"></i>
+            <p>You haven't purchased any tickets yet.</p>
+            <button routerLink="/" class="btn-primary"
+                style="margin-top: 1rem; padding: 10px 20px; background: #9d4edd; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                Browse Events
+            </button>
+        </div>
+
     </ng-container>
 
     <!-- Full Screen QR Modal -->
@@ -100,6 +105,9 @@
             <div class="modal-header">
                 <h3>{{ selectedTicket.batch?.event?.title || 'Event' }}</h3>
                 <p>{{ selectedTicket.batch?.event?.date | date:'fullDate' }}</p>
+                <div *ngIf="selectedTicket.seatRow" class="modal-seat-info">
+                    Row {{ selectedTicket.seatRow }} | Seat {{ selectedTicket.seatNumber }}
+                </div>
             </div>
 
             <div class="qr-container-large">

@@ -13,6 +13,7 @@ import { PaymentProvider } from './payments/payment.provider';
 import { JwtService } from '@nestjs/jwt';
 
 import { PromoCode } from './promo-code.entity';
+import { Seat } from '../events/seat.entity';
 
 @Injectable()
 export class OrdersService {
@@ -22,6 +23,7 @@ export class OrdersService {
     @InjectRepository(Batch) private batchesRepo: Repository<Batch>,
     @InjectRepository(OrderItem) private orderItemsRepo: Repository<OrderItem>,
     @InjectRepository(PromoCode) private promoRepo: Repository<PromoCode>,
+    @InjectRepository(Seat) private seatRepo: Repository<Seat>,
     private dataSource: DataSource,
     private notificationsService: NotificationsService,
     @Inject('PaymentProvider') private paymentProvider: PaymentProvider,
@@ -36,7 +38,7 @@ export class OrdersService {
       return promo;
   }
 
-  async createOrder(data: { items: { batchId: string; quantity: number }[]; user?: any; customerInfo?: any; promoCode?: string }) {
+  async createOrder(data: { items: { batchId: string; quantity: number; seats?: string }[]; user?: any; customerInfo?: any; promoCode?: string }) {
     // ... existing logic ...
     // After creating order (at the end of try block), generate link
 
@@ -91,9 +93,42 @@ export class OrdersService {
         });
         orderItems.push(orderItem);
 
-        // Prepare tickets (to be created after order)
-        for(let i=0; i<item.quantity; i++) {
-            ticketsToCreate.push({ batchId: batch.id });
+        if ((item as any).seats && (item as any).seats.length > 0) {
+            // Handle Seated Tickets
+            const rawSeats = JSON.parse((item as any).seats); 
+            // The frontend sends an array of full Seat objects, we just need IDs for validation/locking
+            const seatIds: string[] = rawSeats.map((s: any) => s.id);
+            
+            // Validate count
+            if (seatIds.length !== item.quantity) {
+                throw new BadRequestException(`Mismatch between quantity (${item.quantity}) and selected seats (${seatIds.length})`);
+            }
+
+            for(const seatId of seatIds) { // Loop is safer for locking than "WHERE IN" with updates in some DBs, but IN is better for perf.
+                // Optimistic: Fetch and check.
+                // Pessimistic: Lock.
+                // Let's use simple findOne for now inside transaction
+                const seat = await queryRunner.manager.findOne(Seat, { 
+                    where: { id: seatId },
+                    lock: { mode: 'pessimistic_write' }
+                });
+
+                if (!seat) throw new NotFoundException(`Seat not found`);
+                if (seat.status !== 'AVAILABLE') throw new BadRequestException(`Seat ${seat.row}-${seat.number} is already taken`);
+
+                seat.status = 'SOLD';
+                // Link to OrderItem? (Need to update Seat entity first for relation, or just mark SOLD)
+                // For now, just marking SOLD. 
+                await queryRunner.manager.save(seat);
+
+                ticketsToCreate.push({ batchId: batch.id, seatId: seat.id, seatRow: seat.row, seatNumber: seat.number });
+            }
+
+        } else {
+             // General Admission
+             for(let i=0; i<item.quantity; i++) {
+                ticketsToCreate.push({ batchId: batch.id });
+             }
         }
       }
 
@@ -131,11 +166,10 @@ export class OrdersService {
       
       const savedOrder = await queryRunner.manager.save(Order, order);
 
-      // Manually save items if cascade not working or to be safe with relation setting
-      for(const item of orderItems) {
-          item.order = savedOrder;
-          await queryRunner.manager.save(OrderItem, item);
-      }
+      // Manually save items loop REMOVED. Cascade in Order entity handles this.
+      // Order items are created in memory and assigned to 'items' property of Order.
+      // When saving order, TypeORM saves them.
+
 
       // 3. Commit Transaction
       await queryRunner.commitTransaction();
@@ -155,7 +189,9 @@ export class OrdersService {
          const tick = this.ticketsRepo.create({
              code: uuidv4(),
              order: savedOrder,
-             batch: { id: t.batchId } as Batch
+             batch: { id: t.batchId } as Batch,
+             seatRow: t.seatRow,
+             seatNumber: t.seatNumber
          });
          savedTickets.push(await this.ticketsRepo.save(tick));
       }
@@ -255,5 +291,70 @@ export class OrdersService {
     } finally {
         await queryRunner.release();
     }
+  }
+  async getSalesAnalytics(userId: string) {
+    // 1. Total Stats (Revenue, Tickets)
+    // We assume 'userId' is the PRODUCER. We need to find events owned by this user.
+    // However, orders are linked to batches -> events.
+    // Let's filter by events where producer.id = userId.
+
+    const events = await this.dataSource.getRepository('Event').find({
+        where: { producer: { id: userId } },
+        relations: ['batches'] 
+    });
+    
+    // Manual aggregation (simpler for now than complex QB with relations)
+    // For large scale, use QB. 
+    
+    // A. Revenue per Event
+    const salesByEvent = events.map((event: any) => {
+        let revenue = 0;
+        let tickets = 0;
+        event.batches.forEach((b: any) => {
+             revenue += Number(b.price) * b.soldQuantity;
+             tickets += b.soldQuantity;
+        });
+        return { title: event.title, revenue, tickets };
+    });
+
+    // B. Daily Sales (Last 30 Days)
+    // This requires querying Orders directly.
+    // Query: Orders -> Items -> Batch -> Event -> Producer (userId)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const data = await this.ordersRepo.createQueryBuilder('order')
+        .leftJoinAndSelect('order.items', 'item')
+        .leftJoinAndSelect('item.batch', 'batch')
+        .leftJoinAndSelect('batch.event', 'event')
+        .where('event.producerId = :userId', { userId }) // Assuming relation ID column
+        .andWhere('order.createdAt >= :date', { date: thirtyDaysAgo })
+        .andWhere('order.status = :status', { status: 'PAID' }) // Only paid
+        .select("DATE(order.createdAt)", "date")
+        .addSelect("SUM(order.totalAmount)", "dailyRevenue") // Note: Order total might include multiple events? 
+                                                             // Taking Order Total is risky if mixed cart. 
+                                                             // Better: SUM(item.price * item.quantity)
+        .groupBy("DATE(order.createdAt)")
+        .orderBy("date", "ASC")
+        .getRawMany(); 
+    
+    // Refined Daily Query using Items summation for accuracy
+    const dailyStats = await this.orderItemsRepo.createQueryBuilder('item')
+        .leftJoin('item.batch', 'batch')
+        .leftJoin('batch.event', 'event')
+        .leftJoin('item.order', 'order')
+        .where('event.producerId = :userId', { userId })
+        .andWhere('order.createdAt >= :date', { date: thirtyDaysAgo })
+        .andWhere('order.status = :status', { status: 'PAID' })
+        .select("TO_CHAR(order.createdAt, 'YYYY-MM-DD')", "date") // Postgres specific
+        .addSelect("SUM(item.price * item.quantity)", "revenue")
+        .groupBy("TO_CHAR(order.createdAt, 'YYYY-MM-DD')")
+        .orderBy("date", "ASC")
+        .getRawMany();
+
+    return {
+        salesByEvent,
+        dailyStats // { date: '2023-01-01', revenue: '100.00' }
+    };
   }
 }

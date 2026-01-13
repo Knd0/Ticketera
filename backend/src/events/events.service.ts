@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Event } from './event.entity';
 import { Batch } from './batch.entity';
 import { User } from '../users/user.entity';
+import { Seat } from './seat.entity';
 
 @Injectable()
 export class EventsService {
@@ -12,6 +13,8 @@ export class EventsService {
     private eventsRepository: Repository<Event>,
     @InjectRepository(Batch)
     private batchesRepository: Repository<Batch>,
+    @InjectRepository(Seat)
+    private seatsRepository: Repository<Seat>,
   ) { }
 
   async create(createEventDto: any, user: User): Promise<Event> {
@@ -35,14 +38,20 @@ export class EventsService {
 
     // 2. Create Batches
     if (batches && batches.length > 0) {
-      const batchEntities = batches.map(b => {
-        if (b.totalQuantity < 0) throw new Error('Stock cannot be negative');
-        return this.batchesRepository.create({
-          ...b,
-          event: savedEvent
-        });
-      });
-      await this.batchesRepository.save(batchEntities);
+      for (const b of batches) {
+         if (b.totalQuantity < 0) throw new Error('Stock cannot be negative');
+         const newBatch: Batch = this.batchesRepository.create({
+             ...b,
+             event: savedEvent
+         } as unknown as Batch);
+         
+         const savedBatch = await this.batchesRepository.save(newBatch);
+         
+         // Force single entity check (TypeORM quirk protection)
+         if (!Array.isArray(savedBatch) && savedBatch.hasSeating) {
+             await this.generateSeats(savedBatch);
+         }
+      }
     }
 
     const newEvent = await this.findOne(savedEvent.id);
@@ -50,16 +59,22 @@ export class EventsService {
     return newEvent;
   }
 
-  async findAll(category?: string): Promise<Event[]> {
-    const where: any = {};
+  async findAll(category?: string, search?: string): Promise<Event[]> {
+    const qb = this.eventsRepository.createQueryBuilder('event')
+      .leftJoinAndSelect('event.producer', 'producer')
+      .leftJoinAndSelect('event.batches', 'batches')
+      .where('event.isVisible = :isVisible', { isVisible: true })
+      .orderBy('event.date', 'ASC');
+
     if (category) {
-      where.category = category;
+      qb.andWhere('event.category = :category', { category });
     }
-    return this.eventsRepository.find({
-      where: { ...where, isVisible: true },
-      relations: ['batches'],
-      order: { date: 'ASC' }
-    });
+
+    if (search) {
+      qb.andWhere('(event.title ILIKE :search OR event.description ILIKE :search)', { search: `%${search}%` });
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: string): Promise<Event | null> {
@@ -107,15 +122,74 @@ export class EventsService {
             if (b.totalQuantity) existingBatch.totalQuantity = b.totalQuantity;
             if (b.salesEndDate) existingBatch.salesEndDate = b.salesEndDate;
             if (b.isManualSoldOut !== undefined) existingBatch.isManualSoldOut = b.isManualSoldOut;
+            
+            // Update Seating Config
+            let seatingChanged = false;
+            if (b.hasSeating !== undefined) {
+                existingBatch.hasSeating = b.hasSeating;
+                seatingChanged = true;
+            }
+            if (b.rows) existingBatch.rows = b.rows;
+            if (b.cols) existingBatch.cols = b.cols;
+
             await this.batchesRepository.save(existingBatch);
+
+            if (existingBatch.hasSeating && seatingChanged) {
+                // Generate seats if enabled and seemingly new (or simple check)
+                await this.generateSeats(existingBatch);
+            }
           }
         } else {
           // Create new batch for this event
-          const newBatch = this.batchesRepository.create({ ...b, event: savedEvent });
-          await this.batchesRepository.save(newBatch);
+          const newBatch: Batch = this.batchesRepository.create({ ...b, event: savedEvent } as unknown as Batch);
+          const savedBatch = await this.batchesRepository.save(newBatch);
+          if (!Array.isArray(savedBatch) && savedBatch.hasSeating) {
+              await this.generateSeats(savedBatch);
+          }
         }
       }
     }
     return this.findOne(id) as Promise<Event>;
+  }
+  async getSeats(batchId: string): Promise<Seat[]> {
+      return this.seatsRepository.find({
+          where: { batch: { id: batchId } },
+          order: { row: 'ASC', number: 'ASC' }
+      });
+  }
+
+  private async generateSeats(batch: Batch) {
+      if (!batch.seats) batch.seats = [];
+      
+      const seats: Seat[] = [];
+      const rowLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      
+      // Check for Custom Config (e.g. "10,12,14")
+      let rowCounts: number[] = [];
+      if (batch.seatConfig) {
+          rowCounts = batch.seatConfig.split(',').map(n => parseInt(n.trim()));
+      } else if (batch.rows && batch.cols) {
+          // Fallback to Uniform Grid
+          rowCounts = Array(batch.rows).fill(batch.cols);
+      } else {
+          return; // No config
+      }
+
+      for (let r = 0; r < rowCounts.length; r++) {
+          const count = rowCounts[r];
+          const rowChar = r < 26 ? rowLabels[r] : `R${r+1}`;
+          
+          for (let c = 1; c <= count; c++) {
+              // Check dupes not needed ideally if fresh batch, but good for safety
+              const seat = this.seatsRepository.create({
+                  row: rowChar,
+                  number: c.toString(),
+                  status: 'AVAILABLE',
+                  batch: batch
+              });
+              seats.push(seat);
+          }
+      }
+      await this.seatsRepository.save(seats);
   }
 }

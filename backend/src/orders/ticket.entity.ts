@@ -16,6 +16,12 @@ export class Ticket {
   @Column({ default: false })
   isUsed: boolean;
 
+  @Column({ nullable: true })
+  seatRow: string;
+
+  @Column({ nullable: true })
+  seatNumber: string;
+
   @ManyToOne(() => Order, order => order.tickets)
   order: Order;
 

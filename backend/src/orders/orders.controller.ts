@@ -43,4 +43,11 @@ export class OrdersController {
           code: promo.code 
       };
   }
+
+  @Post('analytics') // Using POST or GET with User decorator
+  @UseGuards(AuthGuard('jwt'))
+  async getAnalytics(@Request() req: any) {
+      // req.user.id is the producer
+      return this.ordersService.getSalesAnalytics(req.user.id);
+  }
 }

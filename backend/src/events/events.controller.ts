@@ -13,8 +13,9 @@ export class EventsController {
   }
 
   @Get()
-  findAll(@Query('category') category: string) {
-      return this.eventsService.findAll(category);
+
+  findAll(@Query('category') category: string, @Query('search') search: string) {
+      return this.eventsService.findAll(category, search);
   }
 
   @UseGuards(AuthGuard('jwt'))

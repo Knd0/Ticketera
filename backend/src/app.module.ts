@@ -14,6 +14,7 @@ import { Order } from './orders/order.entity';
 import { Ticket } from './orders/ticket.entity';
 import { OrderItem } from './orders/order-item.entity';
 import { PromoCode } from './orders/promo-code.entity';
+import { Seat } from './events/seat.entity';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { PromoCode } from './orders/promo-code.entity';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [User, Event, Batch, Order, Ticket, OrderItem, PromoCode],
+        entities: [User, Event, Batch, Order, Ticket, OrderItem, PromoCode, Seat],
         synchronize: true,
       }),
       inject: [ConfigService],

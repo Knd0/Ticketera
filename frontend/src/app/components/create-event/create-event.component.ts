@@ -59,7 +59,12 @@ export class CreateEventComponent {
     const batchGroup = this.fb.group({
       name: ['General Admission', Validators.required],
       price: [0, [Validators.required, Validators.min(0)]],
-      totalQuantity: [100, [Validators.required, Validators.min(1)]]
+      totalQuantity: [100, [Validators.required, Validators.min(1)]],
+      hasSeating: [this.eventForm.get('hasNumberedSeating')?.value || false],
+      rows: [0],
+      cols: [0],
+      seatConfig: [''],
+      seatingType: ['grid'] // 'grid' | 'custom'
     });
     this.batches.push(batchGroup);
   }

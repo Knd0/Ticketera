@@ -1,0 +1,28 @@
+<div class="seat-map-container" *ngIf="!loading; else loader">
+    <div class="screen">STAGE / SCREEN</div>
+
+    <div class="seats-grid">
+        <div class="row" *ngFor="let row of rows">
+            <div class="row-label">{{ row }}</div>
+            <div class="seats-row">
+                <ng-container *ngFor="let seat of seats">
+                    <button *ngIf="seat.row === row" class="seat" [class.selected]="isSelected(seat)"
+                        [class.sold]="seat.status === 'SOLD'" [disabled]="seat.status !== 'AVAILABLE'"
+                        (click)="toggleSeat(seat)" [title]="'Row ' + seat.row + ' Seat ' + seat.number">
+                        {{ seat.number }}
+                    </button>
+                </ng-container>
+            </div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><span class="seat available"></span> Available</div>
+        <div class="legend-item"><span class="seat selected"></span> Selected</div>
+        <div class="legend-item"><span class="seat sold"></span> Sold</div>
+    </div>
+</div>
+
+<ng-template #loader>
+    <div class="loader">Loading seats...</div>
+</ng-template>

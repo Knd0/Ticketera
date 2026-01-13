@@ -1,0 +1,147 @@
+.seat-map-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    overflow-x: auto;
+}
+
+.screen {
+    width: 80%;
+    height: 30px;
+    background: #e2e8f0;
+    border-radius: 50% / 100% 100% 0 0;
+    text-align: center;
+    line-height: 30px;
+    color: #64748b;
+    font-size: 0.8rem;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.seats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: center;
+    /* Center the whole row (Label + Seats) */
+}
+
+.row-label {
+    font-weight: bold;
+    color: #cbd5e1;
+    width: 20px;
+}
+
+.seats-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    /* Center the seats */
+}
+
+.seat {
+    width: 36px;
+    height: 32px;
+    border-radius: 12px 12px 4px 4px;
+    /* Chair shape */
+    border: none;
+    border-bottom: 4px solid #cbd5e1;
+    /* Base of the seat */
+    font-size: 0.75rem;
+    color: #475569;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.seat::before {
+    /* Armrest Left */
+    content: '';
+    position: absolute;
+    left: -4px;
+    bottom: 4px;
+    width: 4px;
+    height: 16px;
+    background: #cbd5e1;
+    border-radius: 4px 0 0 4px;
+}
+
+.seat::after {
+    /* Armrest Right */
+    content: '';
+    position: absolute;
+    right: -4px;
+    bottom: 4px;
+    width: 4px;
+    height: 16px;
+    background: #cbd5e1;
+    border-radius: 0 4px 4px 0;
+}
+
+.seat:hover:not([disabled]) {
+    transform: translateY(-2px);
+    background: #f1f5f9;
+}
+
+.seat.selected {
+    background: #4f46e5;
+    color: white;
+    border-bottom-color: #3730a3;
+    box-shadow: 0 4px 8px -1px rgba(79, 70, 229, 0.5);
+    transform: translateY(-2px);
+}
+
+.seat.selected::before,
+.seat.selected::after {
+    background: #3730a3;
+}
+
+.seat.sold {
+    background: #ef4444;
+    /* Red-500 */
+    color: white;
+    border-bottom-color: #b91c1c;
+    cursor: not-allowed;
+    opacity: 0.9;
+}
+
+.seat.sold::before,
+.seat.sold::after {
+    background: #b91c1c;
+}
+
+.legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.legend-item .seat {
+    width: 20px;
+    height: 20px;
+    cursor: default;
+}

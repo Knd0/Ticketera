@@ -138,6 +138,52 @@
                             <input type="number" formControlName="totalQuantity" placeholder="100">
                         </div>
                     </div>
+
+                    <!-- Seating Configuration -->
+                    <div class="batch-grid" *ngIf="eventForm.get('hasNumberedSeating')?.value"
+                        style="margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px;">
+                        <div class="input-group">
+                            <label style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" formControlName="hasSeating"> This tier has assigned seats
+                            </label>
+                        </div>
+                        <div class="input-group" *ngIf="batch.get('hasSeating')?.value" style="grid-column: 1 / -1;">
+                            <label>Seating Type</label>
+                            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                                <label style="font-weight:normal; font-size:0.9rem;">
+                                    <input type="radio" formControlName="seatingType" value="grid"> Rectangle Grid
+                                </label>
+                                <label style="font-weight:normal; font-size:0.9rem;">
+                                    <input type="radio" formControlName="seatingType" value="custom"> Custom Rows (e.g.
+                                    Amphitheater)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Grid Options -->
+                        <ng-container
+                            *ngIf="batch.get('hasSeating')?.value && batch.get('seatingType')?.value === 'grid'">
+                            <div class="input-group">
+                                <label>Total Rows</label>
+                                <input type="number" formControlName="rows" placeholder="e.g. 10">
+                            </div>
+                            <div class="input-group">
+                                <label>Seats per Row</label>
+                                <input type="number" formControlName="cols" placeholder="e.g. 20">
+                            </div>
+                        </ng-container>
+
+                        <!-- Custom Options -->
+                        <div class="input-group"
+                            *ngIf="batch.get('hasSeating')?.value && batch.get('seatingType')?.value === 'custom'"
+                            style="grid-column: 1 / -1;">
+                            <label>Row Configuration (Comma separated)</label>
+                            <input type="text" formControlName="seatConfig"
+                                placeholder="e.g. 10,12,12,14,14 (Seats in Row A, B, C...)">
+                            <small style="color:#666; display:block; margin-top:4px;">Define number of seats for each
+                                row.</small>
+                        </div>
+                    </div>
                 </div>
             </div>
 

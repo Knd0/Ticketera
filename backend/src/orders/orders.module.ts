@@ -13,10 +13,11 @@ import { MercadoPagoProvider } from './payments/mercadopago.provider';
 import { PromoCode } from './promo-code.entity';
 
 import { OrderItem } from './order-item.entity';
+import { Seat } from '../events/seat.entity';
 
 @Module({
   imports: [
-      TypeOrmModule.forFeature([Order, Ticket, Batch, PromoCode, OrderItem]),
+      TypeOrmModule.forFeature([Order, Ticket, Batch, PromoCode, OrderItem, Seat]),
       NotificationsModule,
       JwtModule.register({
           secret: 'SUPER_SECRET_KEY_123', // In prod, use env var

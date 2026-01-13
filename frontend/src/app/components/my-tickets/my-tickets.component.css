@@ -308,6 +308,29 @@ h3.section-title {
     margin: 0;
 }
 
+.seat-badge {
+    display: inline-block;
+    margin-top: 5px;
+    margin-left: 10px;
+    padding: 2px 8px;
+    background: #e0e7ff;
+    color: #4338ca;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.modal-seat-info {
+    margin-top: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #4f46e5;
+    background: #eef2ff;
+    padding: 10px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
 .qr-container-large {
     margin: 2rem 0;
     padding: 1rem;
