@@ -1,0 +1,50 @@
+<div class="chatbot-container" [class.open]="isOpen">
+
+    <!-- Trigger Button -->
+    <button class="chat-trigger" (click)="toggleChat()">
+        <span *ngIf="!isOpen">💬</span>
+        <span *ngIf="isOpen">✕</span>
+        <div class="unread-badge" *ngIf="hasUnread && !isOpen"></div>
+    </button>
+
+    <!-- Chat Window -->
+    <div class="chat-window" *ngIf="isOpen">
+        <div class="chat-header">
+            <div class="bot-info">
+                <div class="bot-avatar">🤖</div>
+                <div>
+                    <h3>BI-Tickets AI</h3>
+                    <span class="status">Online</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-messages" #scrollContainer>
+            <div class="message" *ngFor="let msg of messages" [class.user]="msg.sender === 'user'"
+                [class.bot]="msg.sender === 'bot'">
+                <div class="bubble">
+                    {{ msg.text }}
+                </div>
+                <div class="timestamp">{{ msg.timestamp | date:'shortTime' }}</div>
+
+                <!-- Quick Actions -->
+                <div class="actions" *ngIf="msg.actions">
+                    <button *ngFor="let action of msg.actions" (click)="handleAction(action.value)" class="action-btn">
+                        {{ action.label }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="message bot" *ngIf="isTyping">
+                <div class="bubble typing">
+                    <span>.</span><span>.</span><span>.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" [(ngModel)]="userInput" (keyup.enter)="sendMessage()" placeholder="Type a message..." />
+            <button (click)="sendMessage()" [disabled]="!userInput.trim()">➤</button>
+        </div>
+    </div>
+</div>

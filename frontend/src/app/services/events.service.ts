@@ -26,11 +26,16 @@ export class EventsService {
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:3000/events';
 
-  getEvents(category?: string): Observable<Event[]> {
+  getEvents(category?: string, search?: string): Observable<Event[]> {
     let url = this.apiUrl;
-    if (category) {
-        url += `?category=${category}`;
+    const params = [];
+    if (category) params.push(`category=${category}`);
+    if (search) params.push(`search=${search}`);
+    
+    if (params.length > 0) {
+        url += `?${params.join('&')}`;
     }
+    
     return this.http.get<Event[]>(url);
   }
 
