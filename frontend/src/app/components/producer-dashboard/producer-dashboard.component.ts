@@ -404,12 +404,12 @@ export class ProducerDashboardComponent {
 
         // Parallel Requests: Events + Analytics
         // Simplified: Fetch events then analytics
-        
+
         this.http.get<any[]>('http://localhost:3000/events/my/all').subscribe({
             next: (events) => {
                 this.events = events;
                 this.processEvents();
-                
+
                 // Fetch Analytics
                 this.http.post<any>('http://localhost:3000/orders/analytics', {}).subscribe({
                     next: (analytics) => {
@@ -421,7 +421,7 @@ export class ProducerDashboardComponent {
                     error: (err) => {
                         console.error('Analytics load error:', err);
                         // Fallback to local stats if request fails
-                        this.setupCharts(null); 
+                        this.setupCharts(null);
                         this.loading = false;
                         this.cdr.detectChanges();
                     }
@@ -443,17 +443,17 @@ export class ProducerDashboardComponent {
 
     setupCharts(analyticsData?: any) {
         if (analyticsData && analyticsData.salesByEvent) {
-             const labels = analyticsData.salesByEvent.map((e: any) => e.title.substring(0, 15));
-             const revenue = analyticsData.salesByEvent.map((e: any) => e.revenue);
-             const tickets = analyticsData.salesByEvent.map((e: any) => e.tickets);
-             
-             this.barChartData = {
+            const labels = analyticsData.salesByEvent.map((e: any) => e.title.substring(0, 15));
+            const revenue = analyticsData.salesByEvent.map((e: any) => e.revenue);
+            const tickets = analyticsData.salesByEvent.map((e: any) => e.tickets);
+
+            this.barChartData = {
                 labels: labels,
                 datasets: [
                     { data: revenue, label: 'Revenue ($)', backgroundColor: 'rgba(59, 130, 246, 0.8)', borderRadius: 4 },
                     { data: tickets, label: 'Tickets Sold', backgroundColor: 'rgba(16, 185, 129, 0.8)', borderRadius: 4 }
                 ]
-             };
+            };
         } else {
             // Fallback: Local Stats from Batch data (current logic)
             const labels = this.events.map(e => e.title.substring(0, 15) + (e.title.length > 15 ? '...' : ''));
@@ -517,6 +517,7 @@ export class ProducerDashboardComponent {
 
     editEvent(event: any) {
         this.editingEvent = JSON.parse(JSON.stringify(event)); // Deep copy
+        this.cdr.detectChanges();
     }
 
     cancelEdit() {
