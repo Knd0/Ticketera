@@ -2,12 +2,13 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EventsService, Event } from '../../services/events.service';
+import { SeatSelectorComponent } from './seat-selector/seat-selector';
 import { Observable, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-event-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, SeatSelectorComponent],
   templateUrl: './event-detail.component.html',
   styleUrl: './event-detail.component.css'
 })
@@ -27,12 +28,23 @@ export class EventDetailComponent {
   }
 
   selectedBatchId: string | null = null;
+  selectedBatch: any = null;
   quantity: number = 1;
+  selectedSeats: any[] = [];
 
   selectBatch(batchId: string) {
     const batch = this.event?.batches?.find((b: any) => b.id === batchId);
-    if (batch && this.isSoldOut(batch)) return; // Prevent selection if sold out
+    if (batch && this.isSoldOut(batch)) return;
+    
     this.selectedBatchId = batchId;
+    this.selectedBatch = batch;
+    this.selectedSeats = [];
+    this.quantity = 1;
+  }
+  
+  onSeatsSelected(seats: any[]) {
+      this.selectedSeats = seats;
+      this.quantity = seats.length;
   }
 
   isSoldOut(batch: any): boolean {
@@ -46,6 +58,9 @@ export class EventDetailComponent {
 
   increment() { this.quantity++; }
   decrement() { if (this.quantity > 1) this.quantity--; }
+
+  // Expose JSON for template
+  JSON = JSON;
 
   shareEvent() {
       if (this.event && navigator.share) {

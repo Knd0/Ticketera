@@ -175,8 +175,9 @@
 
                     <p class="terms-text">Por favor, verifica tus datos antes de realizar la compra.</p>
 
-                    <button type="submit" [disabled]="checkoutForm.invalid" class="btn btn-block btn-pay">
-                        COMPRAR
+                    <button type="submit" [disabled]="checkoutForm.invalid || isSubmitting"
+                        class="btn btn-block btn-pay">
+                        {{ isSubmitting ? 'Procesando...' : 'COMPRAR' }}
                     </button>
                 </div>
             </div>

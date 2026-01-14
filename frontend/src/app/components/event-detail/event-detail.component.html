@@ -53,15 +53,32 @@
                 </div>
             </div>
 
-            <div class="quantity-selector" *ngIf="selectedBatchId">
-                <button (click)="decrement()" class="qty-btn">-</button>
-                <span class="qty-val">{{ quantity }}</span>
-                <button (click)="increment()" class="qty-btn">+</button>
+            <div *ngIf="selectedBatchId">
+                <!-- Seating Chart -->
+                <div class="seating-section" *ngIf="selectedBatch?.hasSeating">
+                    <h4>Select Seats</h4>
+                    <app-seat-selector [batchId]="selectedBatchId" (selectionChange)="onSeatsSelected($event)">
+                    </app-seat-selector>
+                    <p class="summary" *ngIf="selectedSeats.length > 0">
+                        Selected: {{ selectedSeats.length }} seats
+                    </p>
+                </div>
+
+                <!-- Regular Quantity Selector -->
+                <div class="quantity-selector" *ngIf="!selectedBatch?.hasSeating">
+                    <button (click)="decrement()" class="qty-btn">-</button>
+                    <span class="qty-val">{{ quantity }}</span>
+                    <button (click)="increment()" class="qty-btn">+</button>
+                </div>
             </div>
 
-            <a [routerLink]="['/checkout']"
-                [queryParams]="{ eventId: event.id, batchId: selectedBatchId, quantity: quantity }"
-                class="btn btn-primary btn-full buy-btn" [class.disabled]="!selectedBatchId">
+            <a [routerLink]="['/checkout']" [queryParams]="{ 
+                    eventId: event.id, 
+                    batchId: selectedBatchId, 
+                    quantity: quantity,
+                    seats: selectedSeats.length ? JSON.stringify(selectedSeats) : null
+                }" class="btn btn-primary btn-full buy-btn"
+                [class.disabled]="!selectedBatchId || (selectedBatch?.hasSeating && selectedSeats.length === 0)">
                 Buy Tickets
             </a>
         </div>

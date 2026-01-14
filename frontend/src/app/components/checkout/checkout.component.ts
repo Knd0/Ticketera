@@ -22,6 +22,7 @@ export class CheckoutComponent {
   eventId = this.route.snapshot.queryParamMap.get('eventId');
   batchId = this.route.snapshot.queryParamMap.get('batchId');
   quantity = Number(this.route.snapshot.queryParamMap.get('quantity')) || 1;
+  seatsParam = this.route.snapshot.queryParamMap.get('seats');
 
   event: any = null;
   batch: any = null;
@@ -54,6 +55,7 @@ export class CheckoutComponent {
   purchaseSuccess = false;
   purchasedTickets: any[] = [];
   purchasedOrder: any = null;
+  isSubmitting = false;
 
   ngOnInit() {
       if (this.eventId) {
@@ -143,7 +145,8 @@ export class CheckoutComponent {
       const orderData = {
         items: [{
             batchId: this.batchId!,
-            quantity: this.quantity
+            quantity: this.quantity,
+            seats: this.seatsParam || undefined
         }],
         customerInfo: {
             name: formValue.fullName,
@@ -154,16 +157,23 @@ export class CheckoutComponent {
         promoCode: this.promoApplied ? this.promoCode : undefined
       };
 
+      this.isSubmitting = true;
+
+      console.log('Sending order request...');
       this.ordersService.createOrder(orderData).subscribe({
         next: (res) => {
+          console.log('Order created successfully', res);
           this.purchaseSuccess = true;
           this.purchasedOrder = res.order;
           this.purchasedTickets = res.tickets;
           clearInterval(this.intervalId);
+          this.isSubmitting = false;
+          console.log('State updated: purchaseSuccess=true');
         },
         error: (err) => {
-          console.error(err);
+          console.error('Order creation failed', err);
           alert('Error processing order: ' + err.message);
+          this.isSubmitting = false;
         }
       });
     }
