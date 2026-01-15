@@ -125,7 +125,15 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
               <div class="modal-body">
                   <div class="form-group">
                       <label>Event Title</label>
-                      <input [(ngModel)]="editingEvent.title" class="form-control large-input">
+                      <input [(ngModel)]="editingEvent.title" class="form-control large-input" maxlength="50" #titleInput="ngModel" required (input)="cdr.detectChanges()">
+                      <div class="input-hint">
+                          <span [class.text-danger]="!editingEvent.title || editingEvent.title.trim() === ''">
+                              {{ editingEvent.title?.length || 0 }}/50
+                          </span>
+                      </div>
+                      <span *ngIf="(!editingEvent.title || editingEvent.title.trim() === '')" class="error-text">
+                          Title is required.
+                      </span>
                   </div>
                   <div class="form-group">
                       <label>Description</label>
@@ -296,6 +304,9 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
     .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; color: var(--text-main); background: #0f172a; transition: all 0.2s; box-sizing: border-box; }
     .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
     .large-input { font-size: 1.1rem; padding: 0.85rem 1rem; }
+    .input-hint { display: flex; justify-content: flex-end; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .error-text { color: #ef4444; font-size: 0.8rem; margin-top: 4px; display: block; }
+    .text-danger { color: #ef4444; }
 
     /* Batches Section */
     .batches-section { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
@@ -526,6 +537,10 @@ export class ProducerDashboardComponent {
 
     saveEvent() {
         if (!this.editingEvent) return;
+        if (!this.editingEvent.title || this.editingEvent.title.trim() === '') {
+            alert('Event title cannot be empty.');
+            return;
+        }
         this.saving = true;
         this.cdr.detectChanges();
 

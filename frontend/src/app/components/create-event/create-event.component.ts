@@ -41,7 +41,7 @@ export class CreateEventComponent {
       uala: [false],
       transfer: [false]
     }, { validators: atLeastOneSelected }),
-    title: ['', Validators.required],
+    title: ['', [Validators.required, Validators.maxLength(50)]],
     description: [''],
     location: ['', Validators.required],
     category: ['Concert', Validators.required],

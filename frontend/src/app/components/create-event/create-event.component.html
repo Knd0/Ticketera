@@ -68,9 +68,17 @@
             <h2>Event Details</h2>
             <div class="form-group">
                 <label>Event Title</label>
-                <input type="text" formControlName="title" placeholder="e.g. Summer Festival 2025">
-                <span *ngIf="eventForm.get('title')?.invalid && eventForm.get('title')?.touched" class="error-msg">Title
-                    is required.</span>
+                <input type="text" formControlName="title" placeholder="e.g. Summer Festival 2025" maxlength="50"
+                    (input)="0">
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 4px;">
+                    <span *ngIf="eventForm.get('title')?.invalid && eventForm.get('title')?.touched" class="error-msg"
+                        style="margin: 0;">
+                        <span *ngIf="eventForm.get('title')?.hasError('required')">Title is required.</span>
+                    </span>
+                    <span style="color: #666; margin-left: auto;">
+                        {{ eventForm.get('title')?.value?.length || 0 }}/50
+                    </span>
+                </div>
             </div>
             <div class="form-group">
                 <label>Location</label>
