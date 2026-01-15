@@ -115,8 +115,8 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
       </div>
 
       <!-- Edit Modal -->
-      <div class="modal-backdrop" *ngIf="editingEvent" (click)="cancelEdit()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-backdrop" *ngIf="editingEvent" (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+          <div class="modal-content">
               <div class="modal-header">
                   <h2>Edit Event</h2>
                   <button class="close-btn" (click)="cancelEdit()">×</button>
@@ -531,8 +531,23 @@ export class ProducerDashboardComponent {
         this.cdr.detectChanges();
     }
 
+    // Safe Modal Closing Logic
+    private mouseDownTarget: any = null;
+
+    onBackdropMouseDown(event: MouseEvent) {
+        this.mouseDownTarget = event.target;
+    }
+
+    onBackdropClick(event: MouseEvent) {
+        if (this.mouseDownTarget === event.currentTarget && event.target === event.currentTarget) {
+            this.cancelEdit();
+        }
+        this.mouseDownTarget = null;
+    }
+
     cancelEdit() {
         this.editingEvent = null;
+        this.cdr.detectChanges();
     }
 
     saveEvent() {
