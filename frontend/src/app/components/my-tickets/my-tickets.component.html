@@ -39,12 +39,23 @@
                         </div>
 
                         <div class="ticket-qr-section">
-                            <div class="qr-code">
-                                <img *ngIf="ticket.qrCode" [src]="ticket.qrCode" alt="QR Code">
+                            <div class="qr-code" *ngIf="ticket.qrCode && ticket.order?.status === 'PAID'">
+                                <img [src]="ticket.qrCode" alt="QR Code">
                             </div>
-                            <div class="status-badge valid">
+                            <div class="qr-placeholder"
+                                *ngIf="['PENDING_APPROVAL', 'REJECTED'].includes(ticket.order?.status)">
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
+
+                            <div class="status-badge valid" *ngIf="ticket.order?.status === 'PAID'">
                                 <i class="fas fa-check-circle"></i> Valid Entry
                             </div>
+                            <!-- Show Pending for both PENDING and REJECTED as requested -->
+                            <div class="status-badge pending"
+                                *ngIf="['PENDING_APPROVAL', 'REJECTED'].includes(ticket.order?.status)">
+                                <i class="fas fa-hourglass-half"></i> Pending Approval
+                            </div>
+
                             <span class="ticket-id">#{{ ticket.code | slice:0:8 }}</span>
                         </div>
                     </div>

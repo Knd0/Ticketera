@@ -273,3 +273,13 @@
     /* Hide details on mobile or stack them */
     /* Better mobile adaptation needed if strictly required, but for now desktop focus */
 }
+
+.no-methods-warning {
+    color: #ef4444;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+}

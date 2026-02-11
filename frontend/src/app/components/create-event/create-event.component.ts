@@ -37,8 +37,6 @@ export class CreateEventComponent {
     hasNumberedSeating: [false, Validators.required],
     paymentMethods: this.fb.group({
       mercadoPago: [false],
-      nave: [false],
-      uala: [false],
       transfer: [false]
     }, { validators: atLeastOneSelected }),
     title: ['', [Validators.required, Validators.maxLength(50)]],
@@ -119,7 +117,10 @@ export class CreateEventComponent {
         category: formVal.category,
         imageUrl: formVal.imageUrl,
         isVisible: formVal.isVisible,
-        batches: formVal.batches
+        batches: formVal.batches,
+        paymentMethods: Object.keys(formVal.paymentMethods!)
+          .filter(key => (formVal.paymentMethods as any)[key])
+          .map(key => key === 'transfer' ? 'Cash / Bank Transfer' : 'MercadoPago')
       };
 
       this.eventsService.createEvent(eventData).subscribe({

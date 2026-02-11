@@ -117,29 +117,32 @@
 
                 <h3>Selecciona tu forma de pago</h3>
                 <div class="payment-options">
-                    <label class="payment-option">
-                        <input type="radio" formControlName="paymentMethod" value="credit_card">
-                        <span class="radio-label">Pago con Crédito/ Débito/ Cuotas</span>
-                        <div class="logos">
-                            <span class="logo-box">💳</span> Visa/Master
-                        </div>
-                    </label>
 
-                    <label class="payment-option">
-                        <input type="radio" formControlName="paymentMethod" value="mercadopago">
-                        <span class="radio-label">Mercado Crédito / Pago</span>
-                        <div class="logos">
-                            <span class="logo-box">🤝</span> MP
-                        </div>
-                    </label>
+                    <ng-container *ngIf="event?.paymentMethods?.includes('MercadoPago')">
+                        <label class="payment-option">
+                            <input type="radio" formControlName="paymentMethod" value="MercadoPago">
+                            <span class="radio-label">Mercado Pago</span>
+                            <div class="logos">
+                                <span class="logo-box">🤝</span> MP / Tarjetas
+                            </div>
+                        </label>
+                    </ng-container>
 
-                    <label class="payment-option">
-                        <input type="radio" formControlName="paymentMethod" value="paypal">
-                        <span class="radio-label">International Payments</span>
-                        <div class="logos">
-                            <span class="logo-box">🅿️</span> PayPal
-                        </div>
-                    </label>
+                    <ng-container *ngIf="event?.paymentMethods?.includes('Cash / Bank Transfer')">
+                        <label class="payment-option">
+                            <input type="radio" formControlName="paymentMethod" value="Cash / Bank Transfer">
+                            <span class="radio-label">Transferencia / Efectivo</span>
+                            <div class="logos">
+                                <span class="logo-box">🏦</span> Bank
+                            </div>
+                        </label>
+                    </ng-container>
+
+                    <div *ngIf="!event?.paymentMethods || event?.paymentMethods?.length === 0"
+                        class="no-methods-warning">
+                        No payment methods available for this event.
+                    </div>
+
                 </div>
 
                 <!-- Price Summary -->

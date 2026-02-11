@@ -48,18 +48,12 @@
                     <input type="checkbox" formControlName="mercadoPago"> MercadoPago
                 </label>
                 <label class="checkbox-card">
-                    <input type="checkbox" formControlName="nave"> Nave
-                </label>
-                <label class="checkbox-card">
-                    <input type="checkbox" formControlName="uala"> Ualá Bis
-                </label>
-                <label class="checkbox-card">
-                    <input type="checkbox" formControlName="transfer"> Bank Transfer
+                    <input type="checkbox" formControlName="transfer"> Cash / Bank Transfer
                 </label>
             </div>
             <div *ngIf="eventForm.get('paymentMethods')?.invalid && eventForm.get('paymentMethods')?.touched"
                 class="error-msg">
-                Please select at least one payent method.
+                Please select at least one payment method.
             </div>
         </div>
 

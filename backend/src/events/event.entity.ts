@@ -31,6 +31,9 @@ export class Event {
   @Column({ nullable: true })
   imageUrl: string;
 
+  @Column('simple-array', { nullable: true })
+  paymentMethods: string[];
+
   @ManyToOne('User', 'events')
   producer: User;
 

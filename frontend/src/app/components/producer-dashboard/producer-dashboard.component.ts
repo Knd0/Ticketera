@@ -56,6 +56,7 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
             </div>
         </div>
 
+
         <section class="events-section">
           <h2 class="section-title">Active Events</h2>
           <div class="events-grid">
@@ -84,6 +85,11 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
                   <div class="card-actions">
                      <button (click)="editEvent(event)" class="btn btn-outline full-width">
                         Edit / Manage Batches
+                     </button>
+                     <button *ngIf="event.paymentMethods?.includes('Cash / Bank Transfer')" 
+                             (click)="viewReservations(event)" 
+                             class="btn btn-outline full-width position-relative">
+                        Reservations
                      </button>
                      <a [routerLink]="['/scanner']" class="btn btn-secondary full-width">Scanner</a>
                   </div>
@@ -218,6 +224,53 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
           </div>
       </div>
 
+
+      <!-- Reservations Modal -->
+      <div class="modal-backdrop" *ngIf="showReservationsModal" (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h2>Reservations: {{ selectedEventForReservations?.title }}</h2>
+                  <button class="close-btn" (click)="closeReservationsModal()">×</button>
+              </div>
+              <div class="modal-body">
+                  <div *ngIf="loading" class="loading-container">
+                      <div class="spinner"></div> Loading...
+                  </div>
+
+                  <div class="search-container" *ngIf="!loading && selectedEventReservations.length > 0">
+                      <i class="fas fa-search search-icon"></i>
+                      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="cdr.detectChanges()" placeholder="Search by name, email or DNI..." class="search-input">
+                  </div>
+
+                  <div *ngIf="!loading && selectedEventReservations.length === 0" class="empty-state">
+                      No pending reservations.
+                  </div>
+
+                  <div *ngIf="!loading && filteredReservations.length > 0" class="pending-list">
+                      <div *ngFor="let order of filteredReservations" class="pending-card">
+                          <div class="pending-info">
+                              <h4>{{ order.user?.fullName || order.customerName || order.user?.username || 'Guest' }}</h4>
+                              <p class="meta">
+                                  <strong>Email:</strong> {{ order.user?.email || order.customerInfo?.email || order.customerEmail }} <br>
+                                  <strong>DNI:</strong> {{ order.customerInfo?.docId || 'N/A' }} <br>
+                                  <strong>Total:</strong> {{ order.totalAmount | currency }} • {{ order.createdAt | date:'short' }}
+                              </p>
+                              <div class="items-list">
+                                  <span *ngFor="let item of order.items" class="item-badge">
+                                      {{ item.quantity }}x {{ item.batch.name }}
+                                  </span>
+                              </div>
+                          </div>
+                          <div class="pending-actions">
+                              <button (click)="approveOrder(order.id)" class="btn btn-sm btn-primary">Approve</button>
+                              <button (click)="rejectOrder(order.id)" class="btn btn-sm btn-outline danger">Reject</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
     </div>
   `,
     styles: [`
@@ -283,7 +336,7 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
     .stat-row:last-child { margin-bottom: 0; }
     .rev { color: #10b981; font-weight: 600; }
 
-    .card-actions { display: flex; gap: 10px; }
+    .card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
     .empty-state { grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--surface); border-radius: 12px; border: 2px dashed var(--border); color: var(--text-muted); }
     .empty-state a { color: var(--primary); font-weight: 600; }
@@ -377,6 +430,23 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
     .spinner { width: 40px; height: 40px; margin-bottom: 1rem; }
     .mini-spinner { width: 16px; height: 16px; border-width: 2px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* Pending Section */
+    .pending-section { margin-bottom: 2rem; }
+    .pending-list { display: flex; flex-direction: column; gap: 12px; }
+    .pending-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid #f59e0b; border-radius: 8px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .pending-info h4 { margin: 0 0 0.25rem 0; font-size: 1rem; color: var(--text-main); }
+    .pending-info .meta { margin: 0 0 0.5rem 0; font-size: 0.85rem; color: var(--text-muted); }
+    .item-badge { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; color: var(--text-muted); margin-right: 6px; }
+    .pending-actions { display: flex; gap: 8px; }
+    .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+    .danger { color: #ef4444; border-color: #ef4444; }
+    .danger:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    
+    /* Search Bar */
+    .search-container { position: relative; margin-bottom: 1rem; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+    .search-input { width: 100%; padding: 0.6rem 1rem 0.6rem 2.4rem; background: #0f172a; border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; }
+    .search-input:focus { outline: none; border-color: var(--primary); }
   `]
 })
 export class ProducerDashboardComponent {
@@ -401,6 +471,26 @@ export class ProducerDashboardComponent {
             legend: { position: 'bottom' }
         }
     };
+
+
+    // Reservation Modal State
+    showReservationsModal = false;
+    selectedEventReservations: any[] = [];
+    selectedEventForReservations: any = null;
+    searchTerm: string = '';
+
+    get filteredReservations() {
+        if (!this.searchTerm) return this.selectedEventReservations;
+        const lowerTerm = this.searchTerm.toLowerCase();
+        return this.selectedEventReservations.filter(r =>
+            (r.user?.fullName || '').toLowerCase().includes(lowerTerm) ||
+            (r.customerName || '').toLowerCase().includes(lowerTerm) ||
+            (r.user?.username || '').toLowerCase().includes(lowerTerm) ||
+            (r.user?.email || '').toLowerCase().includes(lowerTerm) ||
+            (r.customerEmail || '').toLowerCase().includes(lowerTerm) ||
+            (r.customerInfo?.docId || '').toLowerCase().includes(lowerTerm)
+        );
+    }
 
     // Edit State
     editingEvent: any = null;
@@ -431,12 +521,12 @@ export class ProducerDashboardComponent {
                     },
                     error: (err) => {
                         console.error('Analytics load error:', err);
-                        // Fallback to local stats if request fails
                         this.setupCharts(null);
                         this.loading = false;
                         this.cdr.detectChanges();
                     }
                 });
+
             },
             error: (err) => {
                 console.error('Error loading events:', err);
@@ -531,6 +621,35 @@ export class ProducerDashboardComponent {
         this.cdr.detectChanges();
     }
 
+    viewReservations(event: any) {
+        this.selectedEventForReservations = event;
+        this.showReservationsModal = true;
+        this.loading = true;
+        this.searchTerm = ''; // Reset search
+        this.cdr.detectChanges();
+
+        this.http.post<any[]>(`http://localhost:3000/orders/event/${event.id}/pending`, {}).subscribe({
+            next: (orders) => {
+                this.selectedEventReservations = orders;
+                this.loading = false;
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error('Error loading reservations:', err);
+                alert('Failed to load reservations.');
+                this.loading = false;
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
+    closeReservationsModal() {
+        this.showReservationsModal = false;
+        this.selectedEventReservations = [];
+        this.selectedEventForReservations = null;
+        this.cdr.detectChanges();
+    }
+
     // Safe Modal Closing Logic
     private mouseDownTarget: any = null;
 
@@ -541,6 +660,7 @@ export class ProducerDashboardComponent {
     onBackdropClick(event: MouseEvent) {
         if (this.mouseDownTarget === event.currentTarget && event.target === event.currentTarget) {
             this.cancelEdit();
+            this.closeReservationsModal();
         }
         this.mouseDownTarget = null;
     }
@@ -574,5 +694,35 @@ export class ProducerDashboardComponent {
                     this.cdr.detectChanges();
                 }
             });
+    }
+
+    approveOrder(orderId: string) {
+        if (!confirm('Approve this reservation?')) return;
+        this.http.post(`http://localhost:3000/orders/${orderId}/approve`, {}).subscribe({
+            next: () => {
+                alert('Order Approved!');
+                // Refresh list
+                if (this.selectedEventForReservations) {
+                    this.viewReservations(this.selectedEventForReservations);
+                }
+                this.loadEvents(); // Update main stats too
+            },
+            error: (err) => alert('Failed to approve order')
+        });
+    }
+
+    rejectOrder(orderId: string) {
+        if (!confirm('Reject this reservation and restore stock?')) return;
+        this.http.post(`http://localhost:3000/orders/${orderId}/reject`, {}).subscribe({
+            next: () => {
+                alert('Order Rejected!');
+                // Refresh list
+                if (this.selectedEventForReservations) {
+                    this.viewReservations(this.selectedEventForReservations);
+                }
+                this.loadEvents();
+            },
+            error: (err) => alert('Failed to reject order')
+        });
     }
 }

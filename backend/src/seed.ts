@@ -85,7 +85,8 @@ async function bootstrap() {
         imageUrl: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
         category: 'Concert',
         producer: producer,
-        isVisible: true
+        isVisible: true,
+        paymentMethods: ['MercadoPago', 'Cash / Bank Transfer']
     });
     await eventRepository.save(concert);
     console.log('Created Concert Event');
@@ -117,7 +118,8 @@ async function bootstrap() {
         imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
         category: 'Conference',
         producer: producer,
-        isVisible: true
+        isVisible: true,
+        paymentMethods: ['MercadoPago']
     });
     await eventRepository.save(conf);
     console.log('Created Tech Conference Event');

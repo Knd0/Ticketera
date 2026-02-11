@@ -26,7 +26,7 @@ export class Order {
 
   @Column({
     type: 'enum',
-    enum: ['PENDING', 'PAID', 'REFUNDED'],
+    enum: ['PENDING', 'PAID', 'REFUNDED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'],
     default: 'PENDING'
   })
   status: string;
@@ -34,7 +34,7 @@ export class Order {
   @Column({ nullable: true })
   paymentId: string;
 
-  @ManyToOne('User', { nullable: true }) 
+  @ManyToOne('User', { nullable: true })
   user: any; // Using 'any' as User might cause circular dep again. Or 'User' string token.
 
   @OneToMany(() => OrderItem, item => item.order, { cascade: true })
