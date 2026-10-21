@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-scanner',
@@ -101,7 +102,7 @@ export class ScannerComponent implements OnInit, OnDestroy {
   }
 
   validateTicket(token: string) {
-      this.http.get<any>(`http://localhost:3000/tickets/validate/${token}`).subscribe({
+      this.http.get<any>(`${environment.apiUrl}/tickets/validate/${token}`).subscribe({
           next: (res) => {
               this.scanResult = res;
           },
