@@ -10,13 +10,13 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
+  /** Busca por email o usuario e incluye el hash: sólo para el login. */
   async findOne(identifier: string): Promise<User | null> {
-    return this.usersRepository.findOne({ 
-        where: [
-            { email: identifier },
-            { username: identifier }
-        ]
-    });
+    return this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :identifier OR user.username = :identifier', { identifier })
+      .getOne();
   }
 
   async findById(id: string): Promise<User | null> {

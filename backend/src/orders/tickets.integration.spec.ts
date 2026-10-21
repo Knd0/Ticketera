@@ -1,3 +1,5 @@
+import { PromoCode } from './promo-code.entity';
+import { Seat } from '../events/seat.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrdersService } from './orders.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -37,6 +39,8 @@ describe('OrdersService Integration - Tickets & Notifications', () => {
         { provide: getRepositoryToken(Ticket), useValue: { find: jest.fn(), save: jest.fn() } },
         { provide: getRepositoryToken(OrderItem), useValue: {} },
         { provide: getRepositoryToken(Batch), useValue: {} },
+        { provide: getRepositoryToken(PromoCode), useValue: {} },
+        { provide: getRepositoryToken(Seat), useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn() } },
         { provide: DataSource, useValue: mockDataSource },
         { provide: JwtService, useValue: { sign: jest.fn().mockReturnValue('mock-jwt-token') } },
         { provide: 'PaymentProvider', useValue: {} }, // Not used in confirmPayment

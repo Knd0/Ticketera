@@ -1,7 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+
+/** Roles que una persona puede elegir al registrarse. `admin` nunca. */
+const SELF_REGISTER_ROLES = ['user', 'producer'];
+/** Campos de perfil que acepta el formulario de registro. */
+const REGISTER_PROFILE_FIELDS = ['fullName', 'dni', 'phone', 'cuit', 'organizationName', 'website', 'profileImageUrl', 'description'] as const;
+const MIN_PASSWORD_LENGTH = 8;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 @Injectable()
 export class AuthService {
@@ -32,11 +39,45 @@ export class AuthService {
     };
   }
 
-  async register(user: any) {
-    const hashedPassword = await bcrypt.hash(user.password, 10);
-    return this.usersService.create({
-      ...user,
-      password: hashedPassword,
+  /**
+   * Alta pública de usuarios.
+   *
+   * Antes se guardaba el body tal cual (`...user`), así que bastaba mandar
+   * `"role": "admin"` para registrarse como administrador, y la respuesta
+   * devolvía el hash de la contraseña. Ahora sólo se aceptan los campos del
+   * formulario, el rol se limita a `user` o `producer` y nunca sale el hash.
+   */
+  async register(body: any) {
+    const input = body ?? {};
+    const email = typeof input.email === 'string' ? input.email.trim() : '';
+    const password = typeof input.password === 'string' ? input.password : '';
+
+    if (!EMAIL_PATTERN.test(email)) {
+      throw new BadRequestException('El email no tiene un formato válido.');
+    }
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      throw new BadRequestException(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+    }
+
+    const profile: Record<string, any> = {};
+    for (const field of REGISTER_PROFILE_FIELDS) {
+      if (typeof input[field] === 'string') profile[field] = input[field].trim();
+    }
+
+    const role = SELF_REGISTER_ROLES.includes(input.role) ? input.role : 'user';
+    const username =
+      typeof input.username === 'string' && input.username.trim()
+        ? input.username.trim()
+        : `${email.split('@')[0]}_${Date.now().toString(36)}`;
+
+    const created = await this.usersService.create({
+      ...profile,
+      username,
+      email,
+      role,
+      password: await bcrypt.hash(password, 10),
     });
+    const { password: _omit, ...safe } = created as any;
+    return safe;
   }
 }
