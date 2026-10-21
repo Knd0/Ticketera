@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-seat-selector',
@@ -29,7 +30,7 @@ export class SeatSelectorComponent {
 
   loadSeats() {
       this.loading = true;
-      this.http.get<any[]>(`http://localhost:3000/seats/${this.batchId}`).subscribe({
+      this.http.get<any[]>(`${environment.apiUrl}/seats/${this.batchId}`).subscribe({
           next: (data) => {
               this.seats = data;
               this.processGrid();

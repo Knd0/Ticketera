@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
+import { environment } from '../../../environments/environment';
 
 @Component({
     selector: 'app-producer-dashboard',
@@ -506,13 +507,13 @@ export class ProducerDashboardComponent {
         // Parallel Requests: Events + Analytics
         // Simplified: Fetch events then analytics
 
-        this.http.get<any[]>('http://localhost:3000/events/my/all').subscribe({
+        this.http.get<any[]>(`${environment.apiUrl}/events/my/all`).subscribe({
             next: (events) => {
                 this.events = events;
                 this.processEvents();
 
                 // Fetch Analytics
-                this.http.post<any>('http://localhost:3000/orders/analytics', {}).subscribe({
+                this.http.post<any>(`${environment.apiUrl}/orders/analytics`, {}).subscribe({
                     next: (analytics) => {
                         console.log('Analytics Loaded:', analytics);
                         this.setupCharts(analytics);
@@ -628,7 +629,7 @@ export class ProducerDashboardComponent {
         this.searchTerm = ''; // Reset search
         this.cdr.detectChanges();
 
-        this.http.post<any[]>(`http://localhost:3000/orders/event/${event.id}/pending`, {}).subscribe({
+        this.http.post<any[]>(`${environment.apiUrl}/orders/event/${event.id}/pending`, {}).subscribe({
             next: (orders) => {
                 this.selectedEventReservations = orders;
                 this.loading = false;
@@ -679,7 +680,7 @@ export class ProducerDashboardComponent {
         this.saving = true;
         this.cdr.detectChanges();
 
-        this.http.post(`http://localhost:3000/events/${this.editingEvent.id}`, this.editingEvent)
+        this.http.post(`${environment.apiUrl}/events/${this.editingEvent.id}`, this.editingEvent)
             .subscribe({
                 next: () => {
                     this.editingEvent = null;
@@ -698,7 +699,7 @@ export class ProducerDashboardComponent {
 
     approveOrder(orderId: string) {
         if (!confirm('Approve this reservation?')) return;
-        this.http.post(`http://localhost:3000/orders/${orderId}/approve`, {}).subscribe({
+        this.http.post(`${environment.apiUrl}/orders/${orderId}/approve`, {}).subscribe({
             next: () => {
                 alert('Order Approved!');
                 // Refresh list
@@ -713,7 +714,7 @@ export class ProducerDashboardComponent {
 
     rejectOrder(orderId: string) {
         if (!confirm('Reject this reservation and restore stock?')) return;
-        this.http.post(`http://localhost:3000/orders/${orderId}/reject`, {}).subscribe({
+        this.http.post(`${environment.apiUrl}/orders/${orderId}/reject`, {}).subscribe({
             next: () => {
                 alert('Order Rejected!');
                 // Refresh list

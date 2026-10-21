@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { Observable, map, shareReplay, catchError, of } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-my-tickets',
@@ -15,7 +16,7 @@ export class MyTicketsComponent {
   private http = inject(HttpClient);
 
   // Create a shared observable for the tickets data
-  private ticketsRequest$ = this.http.get<any[]>('http://localhost:3000/tickets/my').pipe(
+  private ticketsRequest$ = this.http.get<any[]>(`${environment.apiUrl}/tickets/my`).pipe(
     shareReplay(1),
     catchError(err => {
       console.error('Error fetching tickets', err);
