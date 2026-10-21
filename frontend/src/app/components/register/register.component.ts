@@ -48,7 +48,7 @@ import { AuthService } from '../../services/auth.service';
         <div class="form-group">
           <label>Password</label>
           <div class="password-wrapper">
-            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Create a secure password">
+            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Mínimo 8 caracteres">
             <button type="button" class="password-toggle" (click)="togglePassword()">
                 <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
             </button>
@@ -192,7 +192,7 @@ export class RegisterComponent {
 
   registerForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required],
+    password: ['', [Validators.required, Validators.minLength(8)]],
     // Common mappings
     fullName: ['', Validators.required], // Mapped to Organization Name for producer
     // User fields

@@ -12,7 +12,10 @@ export class User {
   @Column({ unique: true, nullable: true })
   email: string;
 
-  @Column()
+  // `select: false`: el hash nunca viaja en las relaciones. Antes salía en
+  // GET /events (event.producer) y en la validación de entradas (order.user).
+  // El login lo pide explícitamente en UsersService.findOne.
+  @Column({ select: false })
   password: string;
 
   @Column({ nullable: true })

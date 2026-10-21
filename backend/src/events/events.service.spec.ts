@@ -1,3 +1,4 @@
+import { Seat } from './seat.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventsService } from './events.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -11,11 +12,12 @@ describe('EventsService', () => {
   let eventsRepository: Repository<Event>;
   let batchesRepository: Repository<Batch>;
 
-  const mockEventsRepository = {
+  const mockEventsRepository: any = {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
     find: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockBatchesRepository = {
@@ -31,6 +33,7 @@ describe('EventsService', () => {
           provide: getRepositoryToken(Event),
           useValue: mockEventsRepository,
         },
+        { provide: getRepositoryToken(Seat), useValue: { create: jest.fn((dto) => dto), save: jest.fn((x) => x), find: jest.fn().mockResolvedValue([]) } },
         {
           provide: getRepositoryToken(Batch),
           useValue: mockBatchesRepository,
@@ -105,17 +108,21 @@ describe('EventsService', () => {
         { id: '1', title: 'Event 1', category: 'Concert', date: new Date() },
         { id: '2', title: 'Event 2', category: 'Concert', date: new Date() }
     ];
-    
-    // Mock find to return filtered list when called with where clause
-    mockEventsRepository.find.mockResolvedValue(events);
+
+    // findAll usa QueryBuilder: sólo eventos visibles, filtrados por categoría.
+    const qb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue(events),
+    };
+    mockEventsRepository.createQueryBuilder.mockReturnValue(qb);
 
     const result = await service.findAll(filterCategory);
 
-    expect(mockEventsRepository.find).toHaveBeenCalledWith({
-        where: { category: filterCategory },
-        relations: ['batches'],
-        order: { date: 'ASC' }
-    });
+    expect(qb.where).toHaveBeenCalledWith('event.isVisible = :isVisible', { isVisible: true });
+    expect(qb.andWhere).toHaveBeenCalledWith('event.category = :category', { category: filterCategory });
     expect(result).toHaveLength(2);
   });
 });

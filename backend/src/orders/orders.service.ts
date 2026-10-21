@@ -1,3 +1,4 @@
+import { isMockPaymentsEnabled } from '../common/secrets';
 import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm'; // DataSource for transactions
@@ -43,6 +44,16 @@ export class OrdersService {
         // After creating order (at the end of try block), generate link
 
         const { items, user, customerInfo, paymentMethod } = data;
+        assertValidOrderItems(items);
+
+        // Mercado Pago todavía es un mock: generaba entradas con QR válido sin
+        // cobrar. Hasta tener la integración real sólo se acepta efectivo /
+        // transferencia (que aprueba el productor), salvo en modo demo.
+        const isCash = paymentMethod === CASH_PAYMENT_METHOD;
+        if (!isCash && !isMockPaymentsEnabled()) {
+            throw new BadRequestException('Por ahora sólo se puede pagar en efectivo o por transferencia.');
+        }
+
         const queryRunner = this.dataSource.createQueryRunner();
 
         await queryRunner.connect();
@@ -142,7 +153,7 @@ export class OrdersService {
             const finalTotal = (totalAmount - discount) + serviceFee;
 
             // Determine Status based on Payment Method
-            const initialStatus = (paymentMethod === 'Cash / Bank Transfer') ? 'PENDING_APPROVAL' : 'PENDING';
+            const initialStatus = isCash ? 'PENDING_APPROVAL' : 'PENDING';
 
             // 2. Create Order
             const order = this.ordersRepo.create({
@@ -183,8 +194,9 @@ export class OrdersService {
                 // MERCADO PAGO FLOW
                 const paymentInfo = await this.paymentProvider.generatePaymentLink(savedOrder);
 
-                // Update Order with real paymentId
+                // Modo demo (isMockPaymentsEnabled): el pago se da por hecho.
                 savedOrder.paymentId = paymentInfo.paymentId;
+                savedOrder.status = 'PAID';
                 await this.ordersRepo.save(savedOrder); // Update outside transaction
 
                 paymentLink = paymentInfo.url;
@@ -215,8 +227,11 @@ export class OrdersService {
             if (queryRunner.isTransactionActive) {
                 await queryRunner.rollbackTransaction();
             }
-            await queryRunner.release();
             throw err;
+        } finally {
+            // Antes sólo se liberaba en el catch: cada orden exitosa dejaba tomada
+            // una conexión del pool y, con ~10 ventas, la API dejaba de responder.
+            if (!queryRunner.isReleased) await queryRunner.release();
         }
     }
 
@@ -257,24 +272,32 @@ export class OrdersService {
                 ticket.signedToken = token;
 
                 await queryRunner.manager.save(Ticket, ticket);
-
-                // Generate QR (Data URL)
-                const qrCode = await this.notificationsService.generateQRCode(token);
-
-                // Send Notifications
-                const email = order.customerEmail || 'no-email@test.com';
-                await this.notificationsService.sendTicketEmail(email, ticket.code, qrCode);
-
-                if (order.customerPhone) {
-                    await this.notificationsService.sendTicketWhatsApp(
-                        order.customerPhone,
-                        ticket.batch.name || 'Event',
-                        qrCode
-                    );
-                }
             }
 
             await queryRunner.commitTransaction();
+
+            // Los avisos van DESPUÉS de confirmar. Antes se mandaban dentro de la
+            // transacción: si el mail fallaba, la aprobación entera se revertía y
+            // el productor no podía aprobar la venta. Las entradas igual quedan
+            // visibles en "Mis entradas".
+            for (const ticket of tickets) {
+                try {
+                    const qrCode = await this.notificationsService.generateQRCode(ticket.signedToken);
+                    if (order.customerEmail) {
+                        await this.notificationsService.sendTicketEmail(order.customerEmail, ticket.code, qrCode);
+                    }
+                    if (order.customerPhone) {
+                        await this.notificationsService.sendTicketWhatsApp(
+                            order.customerPhone,
+                            ticket.batch?.name || 'Event',
+                            qrCode
+                        );
+                    }
+                } catch (notifyErr) {
+                    console.error(`No se pudo notificar la entrada ${ticket.code}:`, notifyErr);
+                }
+            }
+
             return order;
         } catch (err) {
             await queryRunner.rollbackTransaction();
@@ -447,5 +470,24 @@ export class OrdersService {
             .andWhere('order.status = :status', { status: 'PENDING_APPROVAL' })
             .orderBy('order.createdAt', 'DESC')
             .getMany();
+    }
+}
+
+export const CASH_PAYMENT_METHOD = 'Cash / Bank Transfer';
+export const MAX_TICKETS_PER_ITEM = 50;
+
+/** Valida el carrito antes de tocar stock: cantidades enteras y positivas. */
+export function assertValidOrderItems(items: unknown): asserts items is { batchId: string; quantity: number; seats?: string }[] {
+    if (!Array.isArray(items) || items.length === 0) {
+        throw new BadRequestException('La orden no tiene entradas.');
+    }
+    for (const item of items as any[]) {
+        if (!item || typeof item.batchId !== 'string' || item.batchId.length === 0) {
+            throw new BadRequestException('Falta el lote de una de las entradas.');
+        }
+        // Una cantidad negativa "devolvía" stock y restaba del total a cobrar.
+        if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > MAX_TICKETS_PER_ITEM) {
+            throw new BadRequestException(`La cantidad debe ser un número entero entre 1 y ${MAX_TICKETS_PER_ITEM}.`);
+        }
     }
 }

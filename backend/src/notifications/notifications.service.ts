@@ -8,9 +8,9 @@ export class NotificationsService {
   private transporter;
 
   constructor(@Inject('WhatsAppProvider') private whatsappProvider: WhatsAppProvider) {
-    // Using Ethereal for testing - logs email URL to console
-    // In production, User would provide real SMTP credentials
-    this.createTestAccount();
+    // El transporte de mail se crea recién al enviar el primero (ver sendTicketEmail).
+    // Crearlo en el constructor salía a internet al instanciar el servicio y
+    // rompía los tests y cualquier arranque sin red.
   }
 
   async createTestAccount() {

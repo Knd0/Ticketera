@@ -1,4 +1,5 @@
-import { Controller, Post, Body, UseGuards, Request, Param, Injectable } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Param, Injectable, NotFoundException } from '@nestjs/common';
+import { isMockPaymentsEnabled } from '../common/secrets';
 import { OrdersService } from './orders.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -25,10 +26,13 @@ export class OrdersController {
 
     @Post('webhook/mercadopago')
     async handleWebhook(@Body() body: any) {
-        console.log('Received Webhook:', body);
-        // Mock logic: assume body has { id: orderId, status: 'approved' }
-        // In real scenario, verify signature and fetch payment details
-        if (body.status === 'approved' && body.id) {
+        // Webhook de mentira: marca como pagada cualquier orden que reciba, sin
+        // verificar firma ni consultar a Mercado Pago. Sólo existe en modo demo;
+        // en producción respondía a cualquiera y regalaba entradas.
+        if (!isMockPaymentsEnabled()) {
+            throw new NotFoundException();
+        }
+        if (body?.status === 'approved' && body?.id) {
             await this.ordersService.confirmPayment(body.id);
         }
         return { received: true };

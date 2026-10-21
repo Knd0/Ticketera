@@ -29,6 +29,19 @@ describe('OrdersController', () => {
   });
 
   describe('handleWebhook', () => {
+    const ORIGINAL_MOCK = process.env.ENABLE_MOCK_PAYMENTS;
+    beforeEach(() => { process.env.ENABLE_MOCK_PAYMENTS = 'true'; });
+    afterEach(() => {
+      if (ORIGINAL_MOCK === undefined) delete process.env.ENABLE_MOCK_PAYMENTS;
+      else process.env.ENABLE_MOCK_PAYMENTS = ORIGINAL_MOCK;
+    });
+
+    it('no existe fuera del modo demo: nadie puede marcar órdenes como pagadas', async () => {
+      delete process.env.ENABLE_MOCK_PAYMENTS;
+      await expect(controller.handleWebhook({ id: 'order-123', status: 'approved' })).rejects.toThrow();
+      expect(service.confirmPayment).not.toHaveBeenCalled();
+    });
+
     it('should confirm payment if status is approved', async () => {
       const body = { id: 'order-123', status: 'approved' };
       await controller.handleWebhook(body);

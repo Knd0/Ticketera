@@ -18,12 +18,12 @@ export class TicketsController {
     @Get('my')
     @UseGuards(AuthGuard('jwt'))
     async getMyTickets(@Request() req: any) {
-        console.log('getMyTickets User:', req.user); // DEBUG LOG
+        // Si el token no trae email, `{ customerEmail: undefined }` no filtra
+        // nada en TypeORM y devolvería las entradas de todos los clientes.
+        const where: any[] = [{ order: { user: { id: req.user.id } } }];
+        if (req.user.email) where.push({ order: { customerEmail: req.user.email } });
         const tickets = await this.ticketsRepo.find({
-            where: [
-                { order: { user: { id: req.user.id } } },
-                { order: { customerEmail: req.user.email } }
-            ],
+            where,
             relations: ['batch', 'batch.event', 'order'],
             order: { id: 'DESC' }
         });
@@ -80,8 +80,24 @@ export class TicketsController {
                 }
             }
 
-            if (ticket.isUsed) {
-                return { valid: false, message: 'Ticket already used', data: ticket };
+            // Una entrada sólo entra si su orden está pagada (o aprobada por el
+            // productor, que también la deja en PAID).
+            if (ticket.order?.status !== 'PAID') {
+                return { valid: false, message: 'Order not paid', data: { status: ticket.order?.status } };
+            }
+
+            // Marca la entrada como usada en el mismo paso que la valida. Antes
+            // nadie ponía `isUsed = true`: el mismo QR (o una captura de
+            // pantalla) entraba todas las veces que se escaneara. El UPDATE
+            // condicional evita que dos escaneos simultáneos pasen los dos.
+            const result = await this.ticketsRepo.update({ id: ticket.id, isUsed: false }, { isUsed: true });
+            if (!result.affected) {
+                // Sin `data: ticket`: incluía order.user con el hash de la contraseña del comprador.
+                return {
+                    valid: false,
+                    message: 'Ticket already used',
+                    data: { code: ticket.code, holder: ticket.order?.customerName },
+                };
             }
 
             return {

@@ -1,3 +1,4 @@
+import { requireSecret } from '../common/secrets';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
@@ -19,9 +20,12 @@ import { Seat } from '../events/seat.entity';
   imports: [
       TypeOrmModule.forFeature([Order, Ticket, Batch, PromoCode, OrderItem, Seat]),
       NotificationsModule,
-      JwtModule.register({
-          secret: 'SUPER_SECRET_KEY_123', // In prod, use env var
-          signOptions: { expiresIn: '1y' },
+      // Firma de los QR de las entradas. Secreto propio, distinto del de sesión.
+      JwtModule.registerAsync({
+          useFactory: () => ({
+              secret: requireSecret('TICKET_SIGNING_SECRET'),
+              signOptions: { expiresIn: '1y' },
+          }),
       })
   ],
   controllers: [OrdersController, TicketsController],

@@ -73,10 +73,11 @@ export class CheckoutComponent {
         this.eventsService.getEvent(this.eventId).subscribe(ev => {
             this.event = ev;
 
-            // Legacy support: if paymentMethods is missing/empty, default to MercadoPago
-            if (!this.event.paymentMethods || this.event.paymentMethods.length === 0) {
-                this.event.paymentMethods = ['MercadoPago'];
-            }
+            // Mercado Pago todavía no está integrado de verdad (el backend lo
+            // rechaza fuera del modo demo), así que por ahora sólo se ofrece
+            // efectivo / transferencia, que aprueba el productor.
+            this.event.paymentMethods = ['Cash / Bank Transfer'];
+            this.checkoutForm?.get('paymentMethod')?.setValue('Cash / Bank Transfer');
 
             // Find batch
             if (this.batchId && this.event.batches) {
