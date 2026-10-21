@@ -149,7 +149,7 @@ export class OrdersService {
                 await queryRunner.manager.save(PromoCode, promo);
             }
 
-            const serviceFee = totalAmount * 0.15; // 15% Service Fee
+            const serviceFee = totalAmount * SERVICE_FEE_RATE;
             const finalTotal = (totalAmount - discount) + serviceFee;
 
             // Determine Status based on Payment Method
@@ -473,6 +473,8 @@ export class OrdersService {
     }
 }
 
+/** Cargo por servicio que cobra la plataforma sobre el subtotal (es su ingreso). */
+export const SERVICE_FEE_RATE = 0.15;
 export const CASH_PAYMENT_METHOD = 'Cash / Bank Transfer';
 export const MAX_TICKETS_PER_ITEM = 50;
 

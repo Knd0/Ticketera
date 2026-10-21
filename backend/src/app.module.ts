@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
 import { OrdersModule } from './orders/orders.module';
+import { ConsoleModule } from './console/console.module';
 import { User } from './users/user.entity';
 import { Event } from './events/event.entity';
 import { Batch } from './events/batch.entity';
@@ -39,6 +40,7 @@ import { Seat } from './events/seat.entity';
     AuthModule,
     EventsModule,
     OrdersModule,
+    ConsoleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
