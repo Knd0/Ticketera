@@ -46,6 +46,10 @@ export class User {
   @Column({ default: 'user' })
   role: string; // 'user' | 'producer' | 'admin'
 
+  /** Suspendido desde la consola central: no puede iniciar sesión ni usar la API. */
+  @Column({ default: false })
+  isSuspended: boolean;
+
   @OneToMany('Event', 'producer')
   events: Event[];
 }
