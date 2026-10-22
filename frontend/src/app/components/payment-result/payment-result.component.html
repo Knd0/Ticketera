@@ -1,0 +1,84 @@
+<div class="result-container fade-in">
+  <div *ngIf="error" class="result-card">
+    <div class="icon">⚠️</div>
+    <h2>{{ error }}</h2>
+    <a routerLink="/" class="btn btn-outline">Ver eventos</a>
+  </div>
+
+  <div *ngIf="!error && !order" class="result-card">
+    <div class="spinner" aria-hidden="true"></div>
+    <h2>Buscando tu orden…</h2>
+  </div>
+
+  <ng-container *ngIf="order as o">
+    <!-- Pagada: entradas listas -->
+    <div *ngIf="o.status === 'PAID'" class="result-card success">
+      <div class="icon">🎉</div>
+      <h2>¡Listo, ya tenés tus entradas!</h2>
+      <p *ngIf="o.event"><strong>{{ o.event.title }}</strong><br>{{ o.event.date | date:"EEEE d 'de' MMMM, HH:mm 'h'" }} · {{ o.event.location }}</p>
+      <p class="muted">También te las mandamos por email. Mostrá cada QR en la entrada: vale para un solo ingreso.</p>
+
+      <div class="tickets-list">
+        <div class="ticket-card" *ngFor="let t of o.tickets; let i = index" [class.used]="t.isUsed">
+          <div class="ticket-info">
+            <h3>Entrada {{ i + 1 }} de {{ o.tickets.length }}</h3>
+            <p>{{ t.batch }}<span *ngIf="t.seat"> · Butaca {{ t.seat }}</span></p>
+            <p *ngIf="t.isUsed" class="used-label">Ya se usó</p>
+          </div>
+          <img [src]="t.qrCode" alt="Código QR de la entrada {{ i + 1 }}" class="qr">
+          <a [href]="t.qrCode" [attr.download]="'entrada-' + (i + 1) + '.png'" class="btn btn-sm btn-outline">Descargar</a>
+        </div>
+      </div>
+      <a *ngIf="auth.currentUser" routerLink="/my-tickets" class="btn btn-primary">Ver mis entradas</a>
+    </div>
+
+    <!-- Mercado Pago: esperando confirmación -->
+    <div *ngIf="o.status === 'PENDING' && !paymentFailed" class="result-card">
+      <div class="spinner" aria-hidden="true" *ngIf="stillWaiting"></div>
+      <h2>{{ stillWaiting ? 'Confirmando tu pago…' : 'Todavía no recibimos la confirmación del pago' }}</h2>
+      <p class="muted" *ngIf="stillWaiting">No cierres esta página, tarda unos segundos.</p>
+      <p class="muted" *ngIf="!stillWaiting">Si pagaste, en unos minutos te llega el mail con las entradas. Podés volver a esta página con el link del mail de Mercado Pago.</p>
+    </div>
+
+    <div *ngIf="paymentFailed" class="result-card">
+      <div class="icon">💳</div>
+      <h2>El pago no se completó</h2>
+      <p class="muted">No se cobró nada. Podés intentarlo de nuevo con otro medio.</p>
+      <a *ngIf="o.event" [routerLink]="['/event', o.event.id]" class="btn btn-primary">Volver al evento</a>
+    </div>
+
+    <!-- Transferencia / efectivo -->
+    <div *ngIf="o.status === 'PENDING_APPROVAL'" class="result-card">
+      <div class="icon">📝</div>
+      <h2>¡Reserva tomada!</h2>
+      <p *ngIf="o.event"><strong>{{ o.event.title }}</strong></p>
+      <p>Total a pagar: <strong>{{ o.totalAmount | currency:'ARS':'symbol-narrow':'1.0-2' }}</strong></p>
+      <div *ngIf="o.event?.paymentInstructions as how" class="instructions">
+        <h3>Cómo pagar</h3>
+        <p>{{ how }}</p>
+        <button type="button" class="btn btn-sm btn-outline" (click)="copyInstructions(how)">Copiar datos</button>
+      </div>
+      <p class="muted">Cuando el organizador confirme tu pago, te llegan las entradas por email. Guardá este link para ver el estado de tu reserva.</p>
+      <p class="order-id">Orden {{ o.id }}</p>
+    </div>
+
+    <div *ngIf="o.status === 'EXPIRED'" class="result-card">
+      <div class="icon">⏱️</div>
+      <h2>La reserva venció</h2>
+      <p class="muted">Pasó el tiempo para pagar y las entradas volvieron a la venta.</p>
+      <a *ngIf="o.event" [routerLink]="['/event', o.event.id]" class="btn btn-primary">Volver al evento</a>
+    </div>
+
+    <div *ngIf="o.status === 'REJECTED'" class="result-card">
+      <div class="icon">✖️</div>
+      <h2>El organizador rechazó la reserva</h2>
+      <p class="muted">Si creés que es un error, contactalo directamente.</p>
+    </div>
+
+    <div *ngIf="o.status === 'REFUNDED'" class="result-card">
+      <div class="icon">↩️</div>
+      <h2>Esta compra fue reintegrada</h2>
+      <p class="muted">Las entradas de esta orden ya no son válidas.</p>
+    </div>
+  </ng-container>
+</div>

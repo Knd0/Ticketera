@@ -4,6 +4,7 @@ import { User } from './users/user.entity';
 import { Event } from './events/event.entity';
 import { Batch } from './events/batch.entity';
 import { PromoCode } from './orders/promo-code.entity';
+import { Seat } from './events/seat.entity';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -15,11 +16,12 @@ async function bootstrap() {
     const eventRepository = app.get<Repository<Event>>(getRepositoryToken(Event));
     const batchRepository = app.get<Repository<Batch>>(getRepositoryToken(Batch));
     const promoRepository = app.get<Repository<PromoCode>>(getRepositoryToken(PromoCode));
+    const seatRepository = app.get<Repository<Seat>>(getRepositoryToken(Seat));
 
     console.log('Cleaning database...');
     try {
         // Attempt fast truncate for Postgres
-        await batchRepository.query(`TRUNCATE TABLE "batch", "event", "promo_code", "user" RESTART IDENTITY CASCADE;`);
+        await batchRepository.query(`TRUNCATE TABLE "ticket", "order_item", "order", "seat", "batch", "event", "promo_code", "user" RESTART IDENTITY CASCADE;`);
     } catch (error) {
         console.warn('TRUNCATE failed, attempting standard delete...', error);
         await batchRepository.delete({});
@@ -33,118 +35,114 @@ async function bootstrap() {
 
     const password = await bcrypt.hash('password', 10);
 
-    // 1. Create Admin (Role: Producer/Admin)
-    const admin = userRepository.create({
+    // Fechas relativas a hoy: la demo siempre tiene eventos próximos.
+    const inDays = (days: number, hour: number) => {
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        d.setHours(hour, 0, 0, 0);
+        return d;
+    };
+
+    // 1. Administrador
+    await userRepository.save(userRepository.create({
         username: 'admin',
         email: 'admin@test.com',
-        password: password,
+        password,
         role: 'admin',
-        fullName: 'System Administrator',
-        organizationName: 'Ticketera Admin',
-        description: 'Super user account.'
-    });
-    await userRepository.save(admin);
-    console.log('Created Admin User (admin@test.com)');
+        fullName: 'Administración',
+        organizationName: 'Administración',
+    }));
+    console.log('Admin: admin@test.com');
 
-    // 2. Create Producer
-    const producer = userRepository.create({
-        username: 'producer', // unique constraint
+    // 2. Productora de ejemplo
+    const producer = await userRepository.save(userRepository.create({
+        username: 'producer',
         email: 'producer@test.com',
-        password: password,
+        password,
         role: 'producer',
-        fullName: 'Producer Name', // Sometimes mapped to org name
-        organizationName: 'Best Events Co.',
-        website: 'https://bestevents.com',
-        description: 'We organize the best rock concerts and tech summits in the region.',
-        profileImageUrl: 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png',
-        // cuit: '20-12345678-9' // Optional/Removed as per user request
-    });
-    await userRepository.save(producer);
-    console.log('Created Producer User (producer@test.com)');
+        fullName: 'Producciones del Litoral',
+        organizationName: 'Producciones del Litoral',
+        website: 'https://instagram.com/',
+        description: 'Fiestas, recitales y espectáculos en Concordia y la región desde 2015.',
+        phone: '3454000000',
+    }));
+    console.log('Productora: producer@test.com');
 
-    // 3. Create Regular User
-    const user = userRepository.create({
+    // 3. Comprador de ejemplo
+    await userRepository.save(userRepository.create({
         username: 'user1',
         email: 'user@test.com',
-        password: password,
+        password,
         role: 'user',
-        fullName: 'John Doe',
-        dni: '12345678',
-        phone: '1122334455'
-    });
-    await userRepository.save(user);
-    console.log('Created Regular User (user@test.com)');
+        fullName: 'Lucía Gómez',
+        dni: '35111222',
+        phone: '3454123456',
+    }));
+    console.log('Comprador: user@test.com');
 
-    // 4. Create Event: Concert (Linked to Producer)
-    const concert = eventRepository.create({
-        title: 'Rolling Stones Live',
-        description: 'The legendary band returns for one night only.',
-        date: new Date('2026-12-25T20:00:00'),
-        endDate: new Date('2026-12-25T23:00:00'),
-        location: 'Estadio Unico',
-        imageUrl: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+    const both = ['MercadoPago', 'Cash / Bank Transfer'];
+    const howToPay = 'Alias: producciones.litoral\nTitular: Producciones del Litoral\nMandá el comprobante por WhatsApp al 345 4000000.';
+
+    // 4. Eventos de ejemplo
+    const fiesta = await eventRepository.save(eventRepository.create({
+        title: 'Fiesta de la Primavera',
+        description: 'La fiesta más grande de la temporada, con DJs invitados.\nApertura 23 h. Mayores de 18 con DNI.',
+        date: inDays(10, 23),
+        endDate: inDays(11, 5),
+        location: 'Club Ferrocarril, Concordia',
+        category: 'Party',
+        producer,
+        isVisible: true,
+        paymentMethods: both,
+        paymentInstructions: howToPay,
+    }));
+    await batchRepository.save([
+        batchRepository.create({ name: 'Anticipada', price: 8000, totalQuantity: 300, soldQuantity: 0, event: fiesta }),
+        batchRepository.create({ name: 'General', price: 12000, totalQuantity: 400, soldQuantity: 0, event: fiesta }),
+        batchRepository.create({ name: 'VIP', price: 20000, totalQuantity: 50, soldQuantity: 0, event: fiesta }),
+    ]);
+
+    const recital = await eventRepository.save(eventRepository.create({
+        title: 'Noche de Folklore en la Costanera',
+        description: 'Peñas, chamamé y folklore al aire libre. Traé tu reposera.',
+        date: inDays(24, 21),
+        endDate: inDays(25, 1),
+        location: 'Anfiteatro de la Costanera, Concordia',
         category: 'Concert',
-        producer: producer,
+        producer,
         isVisible: true,
-        paymentMethods: ['MercadoPago', 'Cash / Bank Transfer']
-    });
-    await eventRepository.save(concert);
-    console.log('Created Concert Event');
+        paymentMethods: both,
+        paymentInstructions: howToPay,
+    }));
+    await batchRepository.save(batchRepository.create({ name: 'Entrada general', price: 6000, totalQuantity: 500, soldQuantity: 0, event: recital }));
 
-    // Batches for Concert
-    const batch1 = batchRepository.create({
-        name: 'General Admission',
-        price: 50,
-        totalQuantity: 100,
-        soldQuantity: 0,
-        event: concert
-    });
-    const batch2 = batchRepository.create({
-        name: 'VIP',
-        price: 150,
-        totalQuantity: 20,
-        soldQuantity: 0,
-        event: concert
-    });
-    await batchRepository.save([batch1, batch2]);
-
-    // 5. Create Event: Technology Conference
-    const conf = eventRepository.create({
-        title: 'Tech Summit 2026',
-        description: 'The biggest tech conference in the region.',
-        date: new Date('2026-10-15T09:00:00'),
-        endDate: new Date('2026-10-17T18:00:00'),
-        location: 'Convention Center',
-        imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-        category: 'Conference',
-        producer: producer,
+    const teatro = await eventRepository.save(eventRepository.create({
+        title: 'Stand up: Risas en el Odeón',
+        description: 'Una noche de humor con tres comediantes de la región. Ubicaciones numeradas.',
+        date: inDays(17, 21),
+        location: 'Teatro Odeón, Concordia',
+        category: 'Theater',
+        producer,
         isVisible: true,
-        paymentMethods: ['MercadoPago']
-    });
-    await eventRepository.save(conf);
-    console.log('Created Tech Conference Event');
+        paymentMethods: ['MercadoPago'],
+    }));
+    const platea = await batchRepository.save(batchRepository.create({
+        name: 'Platea', price: 9000, totalQuantity: 60, soldQuantity: 0, hasSeating: true, rows: 6, cols: 10, event: teatro,
+    }));
+    const rows = 'ABCDEF';
+    await seatRepository.save([...rows].flatMap(row => Array.from({ length: 10 }, (_, i) =>
+        seatRepository.create({ row, number: String(i + 1), status: 'AVAILABLE', batch: platea }))));
 
-    // Batches for Conference
-    const batchConf = batchRepository.create({
-        name: 'Full Pass',
-        price: 200,
-        totalQuantity: 500,
-        soldQuantity: 0,
-        event: conf
-    });
-    await batchRepository.save(batchConf);
-
-    // 6. Promo Code
-    const promo = promoRepository.create({
-        code: 'WELCOME20',
-        discountPercentage: 20,
+    // 5. Código de descuento
+    await promoRepository.save(promoRepository.create({
+        code: 'BIENVENIDA10',
+        discountPercentage: 10,
         maxUses: 100,
         usedCount: 0,
-        validUntil: new Date('2027-01-01'),
-        isActive: true
-    });
-    await promoRepository.save(promo);
-    console.log('Created Promo Code WELCOME20');
+        validUntil: inDays(90, 23),
+        isActive: true,
+    }));
+    console.log('Código de descuento: BIENVENIDA10');
 
     console.log('Seeding completed successfully!');
     await app.close();

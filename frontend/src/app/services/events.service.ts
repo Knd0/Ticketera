@@ -9,6 +9,10 @@ export interface Event {
   description: string;
   location: string;
   date: Date;
+  endDate?: Date;
+  category?: string;
+  isVisible?: boolean;
+  paymentMethods?: string[];
   imageUrl?: string;
   batches?: any[];
   producer?: {
@@ -30,8 +34,8 @@ export class EventsService {
   getEvents(category?: string, search?: string): Observable<Event[]> {
     let url = this.apiUrl;
     const params = [];
-    if (category) params.push(`category=${category}`);
-    if (search) params.push(`search=${search}`);
+    if (category) params.push(`category=${encodeURIComponent(category)}`);
+    if (search) params.push(`search=${encodeURIComponent(search)}`);
     
     if (params.length > 0) {
         url += `?${params.join('&')}`;

@@ -10,7 +10,7 @@ import { Seat } from './seat.entity';
 export const PAYMENT_METHODS = ['MercadoPago', 'Cash / Bank Transfer'] as const;
 
 /** Campos del evento que el productor puede escribir. El resto (id, productor, fechas de sistema) no. */
-const EVENT_FIELDS = ['title', 'description', 'location', 'date', 'endDate', 'category', 'isVisible', 'imageUrl', 'paymentMethods'] as const;
+const EVENT_FIELDS = ['title', 'description', 'location', 'date', 'endDate', 'category', 'isVisible', 'imageUrl', 'paymentMethods', 'paymentInstructions'] as const;
 const MAX_SEATS_PER_BATCH = 5000;
 
 /**
@@ -113,6 +113,8 @@ export class EventsService {
       .leftJoinAndSelect('event.producer', 'producer')
       .leftJoinAndSelect('event.batches', 'batches')
       .where('event.isVisible = :isVisible', { isVisible: true })
+      // Los eventos que ya terminaron no se listan en la cartelera.
+      .andWhere('COALESCE(event.endDate, event.date) >= :now', { now: new Date() })
       .orderBy('event.date', 'ASC');
 
     if (category) {

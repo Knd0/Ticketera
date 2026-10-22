@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { Observable, map, shareReplay, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { EVENT_PLACEHOLDER } from '../../shared/catalog';
 
 @Component({
   selector: 'app-my-tickets',
@@ -14,14 +15,12 @@ import { environment } from '../../../environments/environment';
 })
 export class MyTicketsComponent {
   private http = inject(HttpClient);
+  placeholder = EVENT_PLACEHOLDER;
 
   // Create a shared observable for the tickets data
   private ticketsRequest$ = this.http.get<any[]>(`${environment.apiUrl}/tickets/my`).pipe(
     shareReplay(1),
-    catchError(err => {
-      console.error('Error fetching tickets', err);
-      return of([]);
-    })
+    catchError(() => of([]))
   );
 
   loading$ = this.ticketsRequest$.pipe(map(t => false), catchError(() => of(false))); // Simple loader trigger
@@ -30,9 +29,9 @@ export class MyTicketsComponent {
     map(tickets => {
       const now = new Date();
       return tickets.filter(t => {
-        if (t.isUsed) return false;
-        if (!t.batch?.event?.date) return true;
-        return new Date(t.batch.event.date) > now;
+        if (t.isUsed || t.order?.status === 'REFUNDED') return false;
+        const end = t.batch?.event?.endDate || t.batch?.event?.date;
+        return !end || new Date(end) > now;
       });
     })
   );
@@ -41,9 +40,9 @@ export class MyTicketsComponent {
     map(tickets => {
       const now = new Date();
       return tickets.filter(t => {
-        if (t.isUsed) return true;
-        if (!t.batch?.event?.date) return false;
-        return new Date(t.batch.event.date) <= now;
+        if (t.isUsed || t.order?.status === 'REFUNDED') return true;
+        const end = t.batch?.event?.endDate || t.batch?.event?.date;
+        return !!end && new Date(end) <= now;
       });
     })
   );

@@ -8,27 +8,27 @@
                 <!-- Clickable Background -->
                 <a [routerLink]="['/event', event.id]" class="slide-bg-link">
                     <div class="slide-bg"
-                        [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder-event.jpg') + ')'">
+                        [style.background-image]="'url(' + (event.imageUrl || placeholder) + ')'">
                     </div>
                 </a>
 
                 <!-- Cinema Gradient -->
                 <div class="slide-overlay pointer-events-none">
                     <div class="slide-content container pointer-events-auto">
-                        <span class="badge-featured">Premier Event</span>
+                        <span class="badge-featured">{{ categoryLabel(event.category) }}</span>
                         <h1 class="slide-title">{{ event.title }}</h1>
 
                         <div class="slide-meta">
-                            <span class="meta-item">{{ event.date | date:'EEEE, d MMMM' }}</span>
+                            <span class="meta-item">{{ event.date | date:"EEEE d 'de' MMMM, HH:mm" }}</span>
                             <span class="meta-dot">•</span>
                             <span class="meta-item">{{ event.location }}</span>
                         </div>
 
-                        <p class="slide-desc" *ngIf="event.description">{{ event.description | slice:0:150 }}...</p>
+                        <p class="slide-desc" *ngIf="event.description">{{ event.description.length > 150 ? (event.description | slice:0:150) + '…' : event.description }}</p>
 
                         <div class="slide-actions">
                             <a [routerLink]="['/event', event.id]" class="btn-hero-primary">
-                                <i class="fas fa-play"></i> Get Tickets
+                                <i class="fas fa-ticket"></i> Comprar entradas
                             </a>
                         </div>
                     </div>
@@ -38,8 +38,8 @@
         </div>
 
         <!-- Carousel Controls -->
-        <button class="carousel-btn prev" (click)="prevSlide()"><i class="fas fa-chevron-left"></i></button>
-        <button class="carousel-btn next" (click)="nextSlide()"><i class="fas fa-chevron-right"></i></button>
+        <button class="carousel-btn prev" (click)="prevSlide()" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+        <button class="carousel-btn next" (click)="nextSlide()" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
 
         <div class="carousel-indicators">
             <span *ngFor="let event of featuredEvents; let i = index" [class.active]="i === currentSlide"
@@ -52,34 +52,35 @@
 
         <!-- Categories Bar -->
         <div class="categories-bar">
-            <button class="cat-pill" *ngFor="let cat of categories" (click)="filterCategory(cat.name)">
-                {{ cat.icon }} {{ cat.name }}
+            <button class="cat-pill" [class.active]="!selectedCategory" (click)="filterCategory()">Todos</button>
+            <button class="cat-pill" *ngFor="let cat of categories" [class.active]="selectedCategory === cat.value" (click)="filterCategory(cat.value)">
+                {{ cat.icon }} {{ cat.label }}
             </button>
-            <button class="cat-pill" (click)="filterCategory('Redo')">All Categories</button>
         </div>
 
 
         <!-- NETFLIX STYLE FEED -->
         <section class="feed-section">
-            <h2 class="section-title">Trending Now</h2>
+            <h2 class="section-title">{{ selectedCategory ? categoryLabel(selectedCategory) : 'Próximos eventos' }}</h2>
 
             <div class="netflix-slider">
                 <a [routerLink]="['/event', event.id]" class="netflix-card" *ngFor="let event of feedEvents">
                     <div class="card-image"
-                        [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder-event.jpg') + ')'">
+                        [style.background-image]="'url(' + (event.imageUrl || placeholder) + ')'">
                     </div>
                     <div class="card-overlay">
                         <h4>{{ event.title }}</h4>
                         <div class="card-meta">
-                            <span>{{ event.date | date:'MMM d' }}</span>
-                            <span class="price-tag">From $20</span>
+                            <span>{{ event.date | date:"EEE d 'de' MMM" }}</span>
+                            <span class="price-tag" *ngIf="minPrice(event) as p; else agotado">Desde {{ p | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
+                            <ng-template #agotado><span class="price-tag sold-out">{{ isSoldOut(event) ? 'Agotado' : 'Próximamente' }}</span></ng-template>
                         </div>
                     </div>
                 </a>
 
                 <!-- Skeleton / Empty State -->
-                <div *ngIf="feedEvents.length === 0" class="empty-feed">
-                    <p>No more events found.</p>
+                <div *ngIf="loaded && feedEvents.length === 0" class="empty-feed">
+                    <p>{{ selectedCategory ? 'No hay eventos en esta categoría por ahora.' : 'Todavía no hay eventos a la venta. ¡Volvé pronto!' }}</p>
                 </div>
             </div>
         </section>

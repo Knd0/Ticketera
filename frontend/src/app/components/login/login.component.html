@@ -1,24 +1,26 @@
 <div class="login-wrapper">
   <div class="login-card">
-    <h2>Welcome Back</h2>
+    <h2>Ingresá a tu cuenta</h2>
+    <p *ngIf="expired" class="hint">Tu sesión venció. Ingresá de nuevo.</p>
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="input-group">
-        <label for="email" class="input-label">Email Address</label>
-        <input id="email" type="email" formControlName="email" class="input-field" placeholder="Enter your email" />
+        <label for="email" class="input-label">Email</label>
+        <input id="email" type="email" formControlName="email" class="input-field" placeholder="tu@email.com" autocomplete="email" />
       </div>
       <div class="input-group">
-        <label for="password" class="input-label">Password</label>
+        <label for="password" class="input-label">Contraseña</label>
         <div class="password-wrapper">
-          <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" class="input-field" placeholder="••••••••" />
-          <button type="button" class="password-toggle" (click)="togglePassword()">
+          <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" class="input-field" placeholder="••••••••" autocomplete="current-password" />
+          <button type="button" class="password-toggle" (click)="togglePassword()" [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
             <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
           </button>
         </div>
       </div>
       <div *ngIf="error" class="error">{{ error }}</div>
       <div class="form-actions">
-        <button type="submit" [disabled]="loginForm.invalid" class="btn btn-primary btn-full">Sign In</button>
+        <button type="submit" [disabled]="loginForm.invalid || loading" class="btn btn-primary btn-full">{{ loading ? 'Ingresando…' : 'Ingresar' }}</button>
       </div>
+      <p class="hint">¿No tenés cuenta? <a routerLink="/register">Creala gratis</a></p>
     </form>
   </div>
 </div>

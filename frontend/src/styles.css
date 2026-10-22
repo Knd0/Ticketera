@@ -206,3 +206,10 @@ h6 {
 .fade-in {
     animation: fadeIn 0.5s ease-out forwards;
 }
+/* Los avisos tienen que quedar por encima de los modales propios de la app. */
+.swal2-container { z-index: 20000 !important; }
+
+@media (max-width: 640px) {
+  .container { padding-left: 1rem; padding-right: 1rem; }
+}
+html, body { overflow-x: hidden; }

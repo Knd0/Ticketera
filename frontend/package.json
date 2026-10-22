@@ -35,6 +35,7 @@
     "html5-qrcode": "^2.3.8",
     "ng2-charts": "^8.0.0",
     "rxjs": "~7.8.0",
+    "sweetalert2": "^11.26.25",
     "tslib": "^2.3.0",
     "zone.js": "^0.16.0"
   },

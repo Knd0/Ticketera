@@ -34,6 +34,10 @@ export class Event {
   @Column('simple-array', { nullable: true })
   paymentMethods: string[];
 
+  /** Alias/CBU o dónde pagar en efectivo: se muestra al reservar por transferencia. */
+  @Column({ type: 'text', nullable: true })
+  paymentInstructions: string;
+
   @ManyToOne('User', 'events')
   producer: User;
 

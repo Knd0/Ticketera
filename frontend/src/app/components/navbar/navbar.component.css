@@ -55,3 +55,39 @@
     cursor: pointer;
     padding: 0;
 }
+.menu-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-main, #f1f5f9);
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.user-info { color: var(--text-main, #f1f5f9); font-size: 0.9rem; }
+
+@media (max-width: 860px) {
+    .navbar-content { padding: 0 1rem; position: relative; }
+    .menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: calc(100% + 1rem);
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        margin: 0;
+        padding: 0.5rem 1rem 1rem;
+        background: rgba(15, 23, 42, 0.98);
+        border-bottom: 1px solid var(--border);
+    }
+    .nav-links.open { display: flex; }
+    .nav-links li { padding: 0.75rem 0; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
+    .nav-links li:last-child { border-bottom: none; }
+    .nav-links .btn { display: block; text-align: center; }
+}

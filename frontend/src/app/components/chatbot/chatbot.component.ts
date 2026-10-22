@@ -25,9 +25,10 @@ export class ChatbotComponent {
 
   ngOnInit() {
     // Initial greeting
-    this.addBotMessage("Hi there! 👋 I'm your BI-Tickets assistant. How can I help you?", [
-        { label: 'Browse Events', value: '/' },
-        { label: 'My Tickets', value: '/my-tickets' }
+    this.addBotMessage('¡Hola! ¿Buscás un evento o tenés una duda con tu compra?', [
+        { label: 'Ver eventos', value: '/' },
+        { label: 'Mis entradas', value: '/my-tickets' },
+        { label: 'No me llegaron las entradas', value: 'no me llegaron' },
     ]);
   }
 
@@ -64,14 +65,13 @@ export class ChatbotComponent {
   }
 
   handleAction(value: string) {
-      if (value.startsWith('/')) {
-          this.router.navigate([value]);
+      if (value.startsWith('http') || value.startsWith('mailto:')) {
+          window.open(value, '_blank', 'noopener');
+      } else if (value.startsWith('/')) {
+          this.router.navigateByUrl(value);
+          this.isOpen = false;
       } else {
-          // If value is a keyword, send it as a message
-          this.userInput = value; // Or map values to nice text
-          if (value === 'events') this.userInput = 'Browse Events';
-          if (value === 'tickets') this.userInput = 'My Tickets';
-          if (value === 'support') this.userInput = 'Support';
+          this.userInput = value;
           this.sendMessage();
       }
   }

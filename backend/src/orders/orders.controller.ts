@@ -1,5 +1,5 @@
 import { Inject, Controller, Post, Get, Body, UseGuards, Request, Param, Query, Headers, HttpCode, UnauthorizedException, ParseUUIDPipe, Logger } from '@nestjs/common';
-import { OrdersService } from './orders.service';
+import { OrdersService, serviceFeeRate, PAYMENT_WINDOW_MINUTES } from './orders.service';
 import type { PaymentProvider } from './payments/payment.provider';
 import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
@@ -54,6 +54,16 @@ export class OrdersController {
             this.logger.error(`Webhook de Mercado Pago (pago ${dataId}) falló`, err as Error);
             throw err;
         }
+    }
+
+    /** Lo que el checkout necesita saber para mostrar precios y medios de pago. */
+    @Get('config')
+    getConfig() {
+        return {
+            serviceFeePercent: Math.round(serviceFeeRate() * 10000) / 100,
+            mercadoPago: this.paymentProvider.isConfigured(),
+            paymentWindowMinutes: PAYMENT_WINDOW_MINUTES,
+        };
     }
 
     /** Estado de una orden para la página de resultado del pago. */

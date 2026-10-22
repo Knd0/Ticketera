@@ -1,9 +1,10 @@
-<div class="container" *ngIf="event$ | async as event; else loadingOrError">
-    <div class="event-header" [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder.jpg') + ')'">
+<div class="container" *ngIf="state === 'ready' && event as event; else loadingOrError">
+    <div class="event-header" [style.background-image]="'url(' + (event.imageUrl || placeholder) + ')'">
         <div class="header-content">
+            <span class="category-badge" *ngIf="event.category">{{ categoryLabel(event.category) }}</span>
             <h1>{{ event.title }}</h1>
-            <p class="date">{{ event.date | date:'fullDate' }}</p>
-            <p class="location">{{ event.location }}</p>
+            <p class="date"><i class="far fa-calendar"></i> {{ event.date | date:"EEEE d 'de' MMMM 'de' y, HH:mm 'h'" }}</p>
+            <p class="location"><i class="fas fa-location-dot"></i> {{ event.location }}</p>
         </div>
     </div>
 
@@ -11,24 +12,23 @@
         <div class="main-info">
             <div class="actions-bar" style="margin-bottom: 2rem; display: flex; gap: 1rem;">
                 <button (click)="shareEvent()" class="btn btn-outline" style="border-color: #aaa; color: #fff;">
-                    <i class="fas fa-share-alt"></i> Share Event
+                    <i class="fas fa-share-alt"></i> Compartir
                 </button>
             </div>
 
-            <h2>About this event</h2>
-            <p>{{ event.description }}</p>
+            <h2>Sobre el evento</h2>
+            <p class="description">{{ event.description }}</p>
 
             <div class="producer-section" *ngIf="event.producer">
-                <h3>Organizer</h3>
+                <h3>Organiza</h3>
                 <div class="producer-card">
-                    <img [src]="event.producer.profileImageUrl || 'assets/placeholder-avatar.jpg'" alt="Producer Avatar"
-                        class="producer-avatar">
+                    <img [src]="event.producer.profileImageUrl || avatarPlaceholder" alt="" class="producer-avatar">
                     <div class="producer-details">
                         <h4>{{ event.producer.organizationName || event.producer.fullName }}</h4>
-                        <p class="producer-desc">{{ event.producer.description || 'Verified Organizer' }}</p>
-                        <a *ngIf="event.producer.website" [href]="event.producer.website" target="_blank"
+                        <p class="producer-desc" *ngIf="event.producer.description">{{ event.producer.description }}</p>
+                        <a *ngIf="event.producer.website" [href]="event.producer.website" target="_blank" rel="noopener"
                             class="producer-link">
-                            Visit Website <i class="fas fa-external-link-alt"></i>
+                            Ver web <i class="fas fa-external-link-alt"></i>
                         </a>
                     </div>
                 </div>
@@ -36,50 +36,48 @@
         </div>
 
         <div class="tickets-sidebar">
-            <h3>Select Tickets</h3>
+            <h3>Entradas</h3>
+            <p *ngIf="isPast" class="notice">Este evento ya pasó.</p>
+            <p *ngIf="!isPast && !event.batches?.length" class="notice">Las entradas todavía no están a la venta.</p>
+
             <div class="batch-list">
                 <div class="batch-item" *ngFor="let batch of event.batches"
-                    [class.selected]="selectedBatchId === batch.id" [class.sold-out]="isSoldOut(batch)"
-                    (click)="!isSoldOut(batch) && selectBatch(batch.id)">
+                    [class.selected]="selectedBatchId === batch.id" [class.sold-out]="!canBuy(batch)"
+                    (click)="selectBatch(batch)">
                     <div class="batch-info">
                         <span class="batch-name">{{ batch.name }}</span>
-                        <span class="batch-price">\${{ batch.price }}</span>
+                        <span class="batch-price">{{ batch.price | currency:'ARS':'symbol-narrow':'1.0-2' }}</span>
                     </div>
                     <div class="batch-availability">
-                        <span *ngIf="isSoldOut(batch)" class="badge-sold-out">SOLD OUT</span>
-                        <span *ngIf="!isSoldOut(batch)">{{ batch.totalQuantity - (batch.soldQuantity || 0) }}
-                            remaining</span>
+                        <span *ngIf="isSoldOut(batch)" class="badge-sold-out">AGOTADO</span>
+                        <span *ngIf="!isSoldOut(batch) && salesClosed(batch)" class="badge-sold-out">VENTA CERRADA</span>
+                        <span *ngIf="canBuy(batch) && available(batch) <= 20">¡Quedan {{ available(batch) }}!</span>
+                        <span *ngIf="canBuy(batch) && batch.hasSeating">Ubicación numerada</span>
                     </div>
                 </div>
             </div>
 
             <div *ngIf="selectedBatchId">
-                <!-- Seating Chart -->
                 <div class="seating-section" *ngIf="selectedBatch?.hasSeating">
-                    <h4>Select Seats</h4>
+                    <h4>Elegí tus butacas</h4>
                     <app-seat-selector [batchId]="selectedBatchId" (selectionChange)="onSeatsSelected($event)">
                     </app-seat-selector>
                     <p class="summary" *ngIf="selectedSeats.length > 0">
-                        Selected: {{ selectedSeats.length }} seats
+                        {{ selectedSeats.length }} {{ selectedSeats.length === 1 ? 'butaca elegida' : 'butacas elegidas' }}
                     </p>
                 </div>
 
-                <!-- Regular Quantity Selector -->
                 <div class="quantity-selector" *ngIf="!selectedBatch?.hasSeating">
-                    <button (click)="decrement()" class="qty-btn">-</button>
+                    <button (click)="decrement()" class="qty-btn" [disabled]="quantity <= 1" aria-label="Una menos">-</button>
                     <span class="qty-val">{{ quantity }}</span>
-                    <button (click)="increment()" class="qty-btn">+</button>
+                    <button (click)="increment()" class="qty-btn" [disabled]="quantity >= maxQuantity" aria-label="Una más">+</button>
                 </div>
+                <p class="summary" *ngIf="quantity > 0">Subtotal: {{ subtotal | currency:'ARS':'symbol-narrow':'1.0-2' }} <small>+ cargo por servicio</small></p>
             </div>
 
-            <a [routerLink]="['/checkout']" [queryParams]="{ 
-                    eventId: event.id, 
-                    batchId: selectedBatchId, 
-                    quantity: quantity,
-                    seats: selectedSeats.length ? JSON.stringify(selectedSeats) : null
-                }" class="btn btn-primary btn-full buy-btn"
-                [class.disabled]="!selectedBatchId || (selectedBatch?.hasSeating && selectedSeats.length === 0)">
-                Buy Tickets
+            <a [routerLink]="['/checkout']" [queryParams]="checkoutParams" class="btn btn-primary btn-full buy-btn"
+                [class.disabled]="!readyToBuy" [attr.aria-disabled]="!readyToBuy">
+                {{ selectedBatchId ? 'Continuar' : 'Elegí una entrada' }}
             </a>
         </div>
     </div>
@@ -87,8 +85,17 @@
 
 <ng-template #loadingOrError>
     <div class="container" style="text-align: center; margin-top: 5rem;">
-        <h2>Loading event info...</h2>
-        <p>If this takes too long, the event might not exist.</p>
-        <a routerLink="/" class="btn btn-outline">Back to Home</a>
+        <ng-container [ngSwitch]="state">
+            <h2 *ngSwitchCase="'loading'">Cargando el evento…</h2>
+            <ng-container *ngSwitchCase="'not-found'">
+                <h2>No encontramos este evento</h2>
+                <p>Puede que el link esté mal o que el evento ya no esté publicado.</p>
+            </ng-container>
+            <ng-container *ngSwitchDefault>
+                <h2>No pudimos cargar el evento</h2>
+                <p>Revisá tu conexión e intentá de nuevo.</p>
+            </ng-container>
+        </ng-container>
+        <a routerLink="/" class="btn btn-outline">Ver todos los eventos</a>
     </div>
 </ng-template>

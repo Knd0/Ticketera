@@ -3,50 +3,54 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { BaseChartDirective } from 'ng2-charts';
+import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { environment } from '../../../environments/environment';
+import { NotifyService } from '../../services/notify.service';
 
 @Component({
     selector: 'app-producer-dashboard',
     standalone: true,
     imports: [CommonModule, RouterLink, FormsModule, BaseChartDirective],
+    // Chart.js se carga sólo con el panel, no en la primera visita del comprador.
+    providers: [provideCharts(withDefaultRegisterables())],
     template: `
     <div class="container fade-in">
       <header class="dashboard-header">
         <div>
-            <h1>Producer Dashboard</h1>
-            <p class="subtitle">Manage your events and track performance.</p>
+            <h1>Mi panel</h1>
+            <p class="subtitle">Tus eventos, ventas y reservas en un solo lugar.</p>
         </div>
-        <a routerLink="/create-event" class="btn btn-primary glow-effect">+ Create New Event</a>
+        <a routerLink="/create-event" class="btn btn-primary glow-effect">+ Crear evento</a>
       </header>
       
       <div *ngIf="loading" class="loading-container">
           <div class="spinner"></div>
-          <p>Loading dashboard data...</p>
+          <p>Cargando tus eventos…</p>
       </div>
 
       <div *ngIf="!loading">
         <!-- Summary Stats & Charts -->
         <div class="stats-overview" *ngIf="events.length > 0">
            <div class="stat-card">
-              <h3>Total Events</h3>
+              <h3>Eventos</h3>
               <p class="stat-value">{{ events.length }}</p>
            </div>
            <div class="stat-card">
-               <h3>Total Tickets Sold</h3>
-               <p class="stat-value">{{ getTotalStats(events).sold }}</p>
+               <h3>Entradas vendidas</h3>
+               <p class="stat-value">{{ totals.sold }}</p>
            </div>
            <div class="stat-card">
-               <h3>Estimated Revenue</h3>
-               <p class="stat-value highlight">{{ getTotalStats(events).revenue | currency }}</p>
+               <h3>Recaudado</h3>
+               <p class="stat-value highlight">{{ totals.revenue | currency:'ARS':'symbol-narrow':'1.0-0' }}</p>
+               <small class="stat-note">Ventas cobradas, sin el cargo por servicio</small>
            </div>
         </div>
 
         <!-- Chart Section -->
-        <div class="chart-section" *ngIf="events.length > 0">
+        <div class="chart-section" *ngIf="totals.sold > 0">
             <div class="chart-header">
-                <h3>Revenue Analytics</h3>
+                <h3>Ventas por evento</h3>
             </div>
             <div class="chart-wrapper">
                 <canvas baseChart
@@ -59,64 +63,73 @@ import { environment } from '../../../environments/environment';
 
 
         <section class="events-section">
-          <h2 class="section-title">Active Events</h2>
+          <h2 class="section-title">Próximos eventos</h2>
           <div class="events-grid">
               <div *ngFor="let event of activeEvents" class="event-card active-card">
                   <div class="card-header">
                       <h3 title="{{ event.title }}">{{ event.title }}</h3>
                       <span class="status-badge" [ngClass]="event.isVisible ? 'active' : 'hidden-badge'">
-                          {{ event.isVisible ? 'Active' : 'Hidden' }}
+                          {{ event.isVisible ? 'Publicado' : 'Oculto' }}
                       </span>
                   </div>
                   <p class="event-date">
-                     <i class="fas fa-calendar"></i> {{ event.date | date:'mediumDate' }} 
+                     <i class="fas fa-calendar"></i> {{ event.date | date:"EEE d 'de' MMM y" }}
                      <span class="separator">•</span>
-                     <i class="fas fa-clock"></i> {{ event.date | date:'shortTime' }}
+                     <i class="fas fa-clock"></i> {{ event.date | date:'HH:mm' }} h
                   </p>
                   <div class="event-stats">
                       <div class="stat-row">
-                          <span>Tickets Sold</span>
-                          <strong>{{ getEventStats(event).sold }}</strong>
+                          <span>Vendidas</span>
+                          <strong>{{ statsFor(event).sold }} / {{ capacity(event) }}</strong>
                       </div>
                       <div class="stat-row">
-                          <span>Revenue</span>
-                          <span class="rev">{{ getEventStats(event).revenue | currency }}</span>
+                          <span>Recaudado</span>
+                          <span class="rev">{{ statsFor(event).revenue | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
+                      </div>
+                      <div class="stat-row" *ngIf="reserved(event) > 0">
+                          <span>Reservadas sin cobrar</span>
+                          <strong>{{ reserved(event) }}</strong>
                       </div>
                   </div>
                   <div class="card-actions">
                      <button (click)="editEvent(event)" class="btn btn-outline full-width">
-                        Edit / Manage Batches
+                        Editar evento y entradas
                      </button>
                      <button *ngIf="event.paymentMethods?.includes('Cash / Bank Transfer')" 
                              (click)="viewReservations(event)" 
                              class="btn btn-outline full-width position-relative">
-                        Reservations
+                        Reservas por transferencia
                      </button>
-                     <a [routerLink]="['/scanner']" class="btn btn-secondary full-width">Scanner</a>
+                     <button (click)="copyLink(event)" class="btn btn-outline full-width">Copiar link de venta</button>
+                     <a [routerLink]="['/scanner']" class="btn btn-secondary full-width">Control de acceso</a>
                   </div>
               </div>
               <div *ngIf="activeEvents.length === 0" class="empty-state">
-                  <p>No active events found. <a routerLink="/create-event">Create one now!</a></p>
+                  <p>No tenés eventos próximos. <a routerLink="/create-event">Creá el primero</a>: en cinco pasos queda a la venta.</p>
               </div>
           </div>
 
-          <h2 class="section-title mt-5">Past Events</h2>
+          <h2 class="section-title mt-5">Eventos pasados</h2>
           <div class="events-grid">
                <div *ngFor="let event of finishedEvents" class="event-card finished">
                   <div class="card-header">
                       <h3 title="{{ event.title }}">{{ event.title }}</h3>
-                      <span class="status-badge finished">Finished</span>
+                      <span class="status-badge finished">Terminado</span>
                   </div>
-                  <p class="event-date">{{ event.date | date:'mediumDate' }}</p>
+                  <p class="event-date">{{ event.date | date:"d 'de' MMM y" }}</p>
                   <div class="event-stats">
                        <div class="stat-row">
-                          <span>Final Sales</span>
-                          <strong>{{ getEventStats(event).sold }}</strong>
+                          <span>Vendidas</span>
+                          <strong>{{ statsFor(event).sold }}</strong>
+                      </div>
+                      <div class="stat-row">
+                          <span>Recaudado</span>
+                          <span class="rev">{{ statsFor(event).revenue | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
                       </div>
                   </div>
-                  <button (click)="editEvent(event)" class="btn btn-sm btn-outline full-width">View Details</button>
+                  <button (click)="editEvent(event)" class="btn btn-sm btn-outline full-width">Ver detalle</button>
               </div>
-              <div *ngIf="finishedEvents.length === 0" class="empty-state">No past events.</div>
+              <div *ngIf="finishedEvents.length === 0" class="empty-state">Todavía no hay eventos terminados.</div>
           </div>
         </section>
       </div>
@@ -125,45 +138,61 @@ import { environment } from '../../../environments/environment';
       <div class="modal-backdrop" *ngIf="editingEvent" (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
           <div class="modal-content">
               <div class="modal-header">
-                  <h2>Edit Event</h2>
-                  <button class="close-btn" (click)="cancelEdit()">×</button>
+                  <h2>Editar evento</h2>
+                  <button class="close-btn" (click)="cancelEdit()" aria-label="Cerrar">×</button>
               </div>
 
               <div class="modal-body">
                   <div class="form-group">
-                      <label>Event Title</label>
-                      <input [(ngModel)]="editingEvent.title" class="form-control large-input" maxlength="50" #titleInput="ngModel" required (input)="cdr.detectChanges()">
+                      <label>Nombre</label>
+                      <input [(ngModel)]="editingEvent.title" class="form-control large-input" maxlength="80" #titleInput="ngModel" required (input)="cdr.detectChanges()">
                       <div class="input-hint">
                           <span [class.text-danger]="!editingEvent.title || editingEvent.title.trim() === ''">
-                              {{ editingEvent.title?.length || 0 }}/50
+                              {{ editingEvent.title?.length || 0 }}/80
                           </span>
                       </div>
                       <span *ngIf="(!editingEvent.title || editingEvent.title.trim() === '')" class="error-text">
-                          Title is required.
+                          El nombre es obligatorio.
                       </span>
                   </div>
                   <div class="form-group">
-                      <label>Description</label>
+                      <label>Lugar</label>
+                      <input [(ngModel)]="editingEvent.location" class="form-control">
+                  </div>
+                  <div class="form-group">
+                      <label>Fecha y hora</label>
+                      <input type="datetime-local" [(ngModel)]="editingEvent.date" class="form-control">
+                  </div>
+                  <div class="form-group">
+                      <label>Imagen (link)</label>
+                      <input type="url" [(ngModel)]="editingEvent.imageUrl" class="form-control" placeholder="https://…">
+                  </div>
+                  <div class="form-group">
+                      <label>Descripción</label>
                       <textarea [(ngModel)]="editingEvent.description" class="form-control" rows="3"></textarea>
+                  </div>
+                  <div class="form-group" *ngIf="editingEvent.paymentMethods?.includes('Cash / Bank Transfer')">
+                      <label>Datos para transferir o dónde pagar</label>
+                      <textarea [(ngModel)]="editingEvent.paymentInstructions" class="form-control" rows="2" placeholder="Alias, CBU, titular…"></textarea>
                   </div>
                   
                   <div class="form-group">
-                      <label>Visibility</label>
+                      <label>Visibilidad</label>
                       <div class="toggle-container" style="align-items: flex-start; flex-direction: row;">
                            <label class="toggle-switch">
                                <input type="checkbox" [(ngModel)]="editingEvent.isVisible">
                                <span class="slider round"></span>
                            </label>
                            <span class="toggle-label" [class.danger]="!editingEvent.isVisible" style="font-size: 0.9rem;">
-                               {{ editingEvent.isVisible ? 'Public (Visible)' : 'Hidden (Private)' }}
+                               {{ editingEvent.isVisible ? 'Publicado: se puede comprar' : 'Oculto: nadie lo ve' }}
                            </span>
                       </div>
                   </div>
 
                   <div class="batches-section">
                       <div class="section-header-row">
-                          <h3>Ticket Tiers & Batches</h3>
-                          <button (click)="addBatch()" class="btn btn-sm btn-outline">+ Add Batch</button>
+                          <h3>Entradas</h3>
+                          <button (click)="addBatch()" class="btn btn-sm btn-outline">+ Agregar tipo</button>
                       </div>
                       
                       <div class="batches-list">
@@ -171,28 +200,28 @@ import { environment } from '../../../environments/environment';
                               
                               <div class="batch-grid">
                                   <div class="input-group name-col">
-                                      <label>Tier Name</label>
-                                      <input [(ngModel)]="batch.name" class="form-control" placeholder="e.g. VIP">
+                                      <label>Nombre</label>
+                                      <input [(ngModel)]="batch.name" class="form-control" placeholder="Ej.: VIP">
                                   </div>
                                   <div class="input-group">
-                                      <label>Price ($)</label>
+                                      <label>Precio ($)</label>
                                       <input type="number" [(ngModel)]="batch.price" class="form-control">
                                   </div>
                                   <div class="input-group">
-                                      <label>Total Stock</label>
-                                      <input type="number" [(ngModel)]="batch.totalQuantity" class="form-control">
+                                      <label>Cantidad total</label>
+                                      <input type="number" [(ngModel)]="batch.totalQuantity" class="form-control" [min]="batch.soldQuantity || 1" [disabled]="batch.hasSeating" [title]="batch.hasSeating ? 'En ubicaciones numeradas la cantidad es la de butacas' : ''">
                                   </div>
                               </div>
 
                               <div class="batch-footer">
                                   <div class="batch-stat">
-                                      <span class="label">Sold so far:</span>
+                                      <span class="label">Vendidas:</span>
                                       <span class="value">{{ batch.soldQuantity }}</span>
                                   </div>
                                   
                                   <div class="batch-controls">
                                        <div class="date-control">
-                                           <label>Sales End Date</label>
+                                           <label>Cierre de venta</label>
                                            <input type="datetime-local" [(ngModel)]="batch.salesEndDate" class="form-control compact">
                                        </div>
 
@@ -202,7 +231,7 @@ import { environment } from '../../../environments/environment';
                                                <span class="slider round"></span>
                                            </label>
                                            <span class="toggle-label" [class.danger]="batch.isManualSoldOut">
-                                               {{ batch.isManualSoldOut ? 'Sold Out' : 'Available' }}
+                                               {{ batch.isManualSoldOut ? 'Pausada (agotada)' : 'A la venta' }}
                                            </span>
                                        </div>
                                   </div>
@@ -214,11 +243,11 @@ import { environment } from '../../../environments/environment';
               </div>
 
               <div class="modal-actions">
-                  <span *ngIf="saving" class="saving-text"><div class="mini-spinner"></div> Saving changes...</span>
+                  <span *ngIf="saving" class="saving-text"><div class="mini-spinner"></div> Guardando…</span>
                   <div class="btn-group">
-                      <button (click)="cancelEdit()" class="btn btn-text" [disabled]="saving">Cancel</button>
+                      <button (click)="cancelEdit()" class="btn btn-text" [disabled]="saving">Cancelar</button>
                       <button (click)="saveEvent()" class="btn btn-primary" [disabled]="saving">
-                          Save Changes
+                          Guardar cambios
                       </button>
                   </div>
               </div>
@@ -230,41 +259,41 @@ import { environment } from '../../../environments/environment';
       <div class="modal-backdrop" *ngIf="showReservationsModal" (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
           <div class="modal-content">
               <div class="modal-header">
-                  <h2>Reservations: {{ selectedEventForReservations?.title }}</h2>
+                  <h2>Reservas: {{ selectedEventForReservations?.title }}</h2>
                   <button class="close-btn" (click)="closeReservationsModal()">×</button>
               </div>
               <div class="modal-body">
                   <div *ngIf="loading" class="loading-container">
-                      <div class="spinner"></div> Loading...
+                      <div class="spinner"></div> Cargando…
                   </div>
 
                   <div class="search-container" *ngIf="!loading && selectedEventReservations.length > 0">
                       <i class="fas fa-search search-icon"></i>
-                      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="cdr.detectChanges()" placeholder="Search by name, email or DNI..." class="search-input">
+                      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="cdr.detectChanges()" placeholder="Buscar por nombre, email o DNI…" class="search-input">
                   </div>
 
                   <div *ngIf="!loading && selectedEventReservations.length === 0" class="empty-state">
-                      No pending reservations.
+                      No hay reservas pendientes de pago.
                   </div>
 
                   <div *ngIf="!loading && filteredReservations.length > 0" class="pending-list">
                       <div *ngFor="let order of filteredReservations" class="pending-card">
                           <div class="pending-info">
-                              <h4>{{ order.user?.fullName || order.customerName || order.user?.username || 'Guest' }}</h4>
+                              <h4>{{ order.customerName }}</h4>
                               <p class="meta">
-                                  <strong>Email:</strong> {{ order.user?.email || order.customerInfo?.email || order.customerEmail }} <br>
-                                  <strong>DNI:</strong> {{ order.customerInfo?.docId || 'N/A' }} <br>
-                                  <strong>Total:</strong> {{ order.totalAmount | currency }} • {{ order.createdAt | date:'short' }}
+                                  <strong>Email:</strong> {{ order.customerEmail }} <br>
+                                  <strong>Celular:</strong> {{ order.customerPhone || '—' }} · <strong>DNI:</strong> {{ order.customerDocId || '—' }} <br>
+                                  <strong>Total:</strong> {{ order.totalAmount | currency:'ARS':'symbol-narrow':'1.0-2' }} · {{ order.createdAt | date:'dd/MM HH:mm' }}
                               </p>
                               <div class="items-list">
                                   <span *ngFor="let item of order.items" class="item-badge">
-                                      {{ item.quantity }}x {{ item.batch.name }}
+                                      {{ item.quantity }} × {{ item.batch.name }}
                                   </span>
                               </div>
                           </div>
                           <div class="pending-actions">
-                              <button (click)="approveOrder(order.id)" class="btn btn-sm btn-primary">Approve</button>
-                              <button (click)="rejectOrder(order.id)" class="btn btn-sm btn-outline danger">Reject</button>
+                              <button (click)="approveOrder(order)" class="btn btn-sm btn-primary">Cobrada: emitir entradas</button>
+                              <button (click)="rejectOrder(order)" class="btn btn-sm btn-outline danger">Rechazar</button>
                           </div>
                       </div>
                   </div>
@@ -448,11 +477,17 @@ import { environment } from '../../../environments/environment';
     .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
     .search-input { width: 100%; padding: 0.6rem 1rem 0.6rem 2.4rem; background: #0f172a; border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; }
     .search-input:focus { outline: none; border-color: var(--primary); }
+    .stat-note { color: var(--text-muted); font-size: 0.75rem; }
+    @media (max-width: 640px) {
+      .dashboard-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .pending-card { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    }
   `]
 })
 export class ProducerDashboardComponent {
     http = inject(HttpClient);
-    cdr = inject(ChangeDetectorRef); // Manually trigger change detection
+    cdr = inject(ChangeDetectorRef);
+    notify = inject(NotifyService);
 
     events: any[] = [];
     activeEvents: any[] = [];
@@ -480,20 +515,18 @@ export class ProducerDashboardComponent {
     selectedEventForReservations: any = null;
     searchTerm: string = '';
 
+    /** Ventas cobradas por evento (de /orders/analytics). */
+    private paid = new Map<string, { sold: number; revenue: number }>();
+    totals = { sold: 0, revenue: 0 };
+
     get filteredReservations() {
-        if (!this.searchTerm) return this.selectedEventReservations;
-        const lowerTerm = this.searchTerm.toLowerCase();
+        const term = this.searchTerm.trim().toLowerCase();
+        if (!term) return this.selectedEventReservations;
         return this.selectedEventReservations.filter(r =>
-            (r.user?.fullName || '').toLowerCase().includes(lowerTerm) ||
-            (r.customerName || '').toLowerCase().includes(lowerTerm) ||
-            (r.user?.username || '').toLowerCase().includes(lowerTerm) ||
-            (r.user?.email || '').toLowerCase().includes(lowerTerm) ||
-            (r.customerEmail || '').toLowerCase().includes(lowerTerm) ||
-            (r.customerInfo?.docId || '').toLowerCase().includes(lowerTerm)
+            [r.customerName, r.customerEmail, r.customerDocId, r.customerPhone].some(v => String(v || '').toLowerCase().includes(term))
         );
     }
 
-    // Edit State
     editingEvent: any = null;
 
     ngOnInit() {
@@ -502,36 +535,18 @@ export class ProducerDashboardComponent {
 
     loadEvents() {
         this.loading = true;
-        this.cdr.detectChanges(); // Force initial state
-
-        // Parallel Requests: Events + Analytics
-        // Simplified: Fetch events then analytics
-
         this.http.get<any[]>(`${environment.apiUrl}/events/my/all`).subscribe({
             next: (events) => {
                 this.events = events;
                 this.processEvents();
-
-                // Fetch Analytics
                 this.http.post<any>(`${environment.apiUrl}/orders/analytics`, {}).subscribe({
-                    next: (analytics) => {
-                        console.log('Analytics Loaded:', analytics);
-                        this.setupCharts(analytics);
-                        this.loading = false;
-                        this.cdr.detectChanges();
-                    },
-                    error: (err) => {
-                        console.error('Analytics load error:', err);
-                        this.setupCharts(null);
-                        this.loading = false;
-                        this.cdr.detectChanges();
-                    }
+                    next: (analytics) => { this.setupStats(analytics); this.loading = false; this.cdr.detectChanges(); },
+                    error: () => { this.setupStats(null); this.loading = false; this.cdr.detectChanges(); },
                 });
-
             },
             error: (err) => {
-                console.error('Error loading events:', err);
                 this.loading = false;
+                this.notify.error('No pudimos cargar tus eventos', this.notify.messageOf(err));
                 this.cdr.detectChanges();
             }
         });
@@ -539,86 +554,69 @@ export class ProducerDashboardComponent {
 
     processEvents() {
         const now = new Date();
-        this.activeEvents = this.events.filter(e => new Date(e.date) >= now);
-        this.finishedEvents = this.events.filter(e => new Date(e.date) < now);
+        const end = (e: any) => new Date(e.endDate || e.date);
+        this.activeEvents = this.events.filter(e => end(e) >= now).sort((a, b) => +new Date(a.date) - +new Date(b.date));
+        this.finishedEvents = this.events.filter(e => end(e) < now).sort((a, b) => +new Date(b.date) - +new Date(a.date));
     }
 
-    setupCharts(analyticsData?: any) {
-        if (analyticsData && analyticsData.salesByEvent) {
-            const labels = analyticsData.salesByEvent.map((e: any) => e.title.substring(0, 15));
-            const revenue = analyticsData.salesByEvent.map((e: any) => e.revenue);
-            const tickets = analyticsData.salesByEvent.map((e: any) => e.tickets);
-
-            this.barChartData = {
-                labels: labels,
-                datasets: [
-                    { data: revenue, label: 'Revenue ($)', backgroundColor: 'rgba(59, 130, 246, 0.8)', borderRadius: 4 },
-                    { data: tickets, label: 'Tickets Sold', backgroundColor: 'rgba(16, 185, 129, 0.8)', borderRadius: 4 }
-                ]
-            };
-        } else {
-            // Fallback: Local Stats from Batch data (current logic)
-            const labels = this.events.map(e => e.title.substring(0, 15) + (e.title.length > 15 ? '...' : ''));
-            const revenueData = this.events.map(e => this.getEventStats(e).revenue);
-            const soldData = this.events.map(e => this.getEventStats(e).sold);
-
-            this.barChartData = {
-                labels: labels,
-                datasets: [
-                    {
-                        data: revenueData,
-                        label: 'Revenue ($)',
-                        backgroundColor: 'rgba(37, 99, 235, 0.7)',
-                        borderRadius: 4
-                    },
-                    {
-                        data: soldData,
-                        label: 'Tickets Sold',
-                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                        borderRadius: 4
-                    }
-                ]
-            };
+    setupStats(analytics: any) {
+        this.paid.clear();
+        for (const row of analytics?.salesByEvent ?? []) {
+            this.paid.set(row.eventId, { sold: Number(row.tickets) || 0, revenue: Number(row.revenue) || 0 });
         }
+        this.totals = [...this.paid.values()].reduce((t, r) => ({ sold: t.sold + r.sold, revenue: t.revenue + r.revenue }), { sold: 0, revenue: 0 });
+
+        const withSales = this.events.filter(e => this.paid.has(e.id));
+        this.barChartData = {
+            labels: withSales.map(e => e.title.length > 18 ? e.title.slice(0, 17) + '…' : e.title),
+            datasets: [
+                { data: withSales.map(e => this.paid.get(e.id)!.revenue), label: 'Recaudado ($)', backgroundColor: 'rgba(99, 102, 241, 0.8)', borderRadius: 4 },
+                { data: withSales.map(e => this.paid.get(e.id)!.sold), label: 'Entradas', backgroundColor: 'rgba(16, 185, 129, 0.8)', borderRadius: 4 },
+            ]
+        };
     }
 
-    // Stats Helpers
-    getTotalStats(events: any[]) {
-        let sold = 0;
-        let revenue = 0;
-        events.forEach(e => {
-            e.batches.forEach((b: any) => {
-                sold += b.soldQuantity;
-                revenue += (b.soldQuantity * Number(b.price));
-            });
-        });
-        return { sold, revenue };
+    statsFor(event: any) {
+        return this.paid.get(event.id) ?? { sold: 0, revenue: 0 };
     }
 
-    getEventStats(event: any) {
-        let sold = 0;
-        let revenue = 0;
-        event.batches.forEach((b: any) => {
-            sold += b.soldQuantity;
-            revenue += (b.soldQuantity * Number(b.price));
-        });
-        return { sold, revenue };
+    capacity(event: any): number {
+        return (event.batches ?? []).reduce((n: number, b: any) => n + (b.totalQuantity || 0), 0);
     }
 
-    // Actions
+    /** Entradas tomadas (reservas o pagos en curso) que todavía no se cobraron. */
+    reserved(event: any): number {
+        const taken = (event.batches ?? []).reduce((n: number, b: any) => n + (b.soldQuantity || 0), 0);
+        return Math.max(0, taken - this.statsFor(event).sold);
+    }
+
+    copyLink(event: any) {
+        const url = `${window.location.origin}/event/${event.id}`;
+        navigator.clipboard?.writeText(url).then(
+            () => this.notify.toast('Link copiado: compartilo en Instagram o WhatsApp'),
+            () => this.notify.success('Link de venta', url),
+        );
+    }
+
     addBatch() {
         if (!this.editingEvent.batches) this.editingEvent.batches = [];
-        this.editingEvent.batches.push({
-            name: '',
-            price: 0,
-            totalQuantity: 100,
-            soldQuantity: 0,
-            isManualSoldOut: false
-        });
+        this.editingEvent.batches.push({ name: '', price: null, totalQuantity: 100, soldQuantity: 0, isManualSoldOut: false });
+    }
+
+    /** "2026-10-15T23:00:00.000Z" → "2026-10-15T20:00" (hora local, para inputs datetime-local). */
+    private toLocalInput(value: any): string {
+        if (!value) return '';
+        const d = new Date(value);
+        if (isNaN(+d)) return '';
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
     editEvent(event: any) {
-        this.editingEvent = JSON.parse(JSON.stringify(event)); // Deep copy
+        const copy = JSON.parse(JSON.stringify(event));
+        copy.date = this.toLocalInput(copy.date);
+        for (const b of copy.batches ?? []) b.salesEndDate = this.toLocalInput(b.salesEndDate);
+        this.editingEvent = copy;
         this.cdr.detectChanges();
     }
 
@@ -626,9 +624,7 @@ export class ProducerDashboardComponent {
         this.selectedEventForReservations = event;
         this.showReservationsModal = true;
         this.loading = true;
-        this.searchTerm = ''; // Reset search
-        this.cdr.detectChanges();
-
+        this.searchTerm = '';
         this.http.post<any[]>(`${environment.apiUrl}/orders/event/${event.id}/pending`, {}).subscribe({
             next: (orders) => {
                 this.selectedEventReservations = orders;
@@ -636,9 +632,8 @@ export class ProducerDashboardComponent {
                 this.cdr.detectChanges();
             },
             error: (err) => {
-                console.error('Error loading reservations:', err);
-                alert('Failed to load reservations.');
                 this.loading = false;
+                this.notify.error('No pudimos cargar las reservas', this.notify.messageOf(err));
                 this.cdr.detectChanges();
             }
         });
@@ -651,7 +646,6 @@ export class ProducerDashboardComponent {
         this.cdr.detectChanges();
     }
 
-    // Safe Modal Closing Logic
     private mouseDownTarget: any = null;
 
     onBackdropMouseDown(event: MouseEvent) {
@@ -672,58 +666,70 @@ export class ProducerDashboardComponent {
     }
 
     saveEvent() {
-        if (!this.editingEvent) return;
-        if (!this.editingEvent.title || this.editingEvent.title.trim() === '') {
-            alert('Event title cannot be empty.');
+        const e = this.editingEvent;
+        if (!e) return;
+        if (!e.title?.trim()) { this.notify.toast('El evento necesita un nombre.', 'warning'); return; }
+        if ((e.batches ?? []).some((b: any) => !String(b.name || '').trim() || b.price === null || b.price === '' || Number(b.price) < 0)) {
+            this.notify.toast('Completá nombre y precio de cada entrada.', 'warning');
             return;
         }
+        const payload = {
+            title: e.title.trim(),
+            description: e.description,
+            location: e.location,
+            date: e.date ? new Date(e.date).toISOString() : undefined,
+            imageUrl: e.imageUrl || null,
+            isVisible: !!e.isVisible,
+            paymentInstructions: e.paymentInstructions ?? null,
+            batches: (e.batches ?? []).map((b: any) => ({
+                id: b.id,
+                name: String(b.name).trim(),
+                price: Number(b.price),
+                ...(b.hasSeating ? {} : { totalQuantity: Number(b.totalQuantity) }),
+                salesEndDate: b.salesEndDate ? new Date(b.salesEndDate).toISOString() : null,
+                isManualSoldOut: !!b.isManualSoldOut,
+            })),
+        };
         this.saving = true;
-        this.cdr.detectChanges();
-
-        this.http.post(`${environment.apiUrl}/events/${this.editingEvent.id}`, this.editingEvent)
-            .subscribe({
-                next: () => {
-                    this.editingEvent = null;
-                    this.saving = false;
-                    this.loadEvents(); // Reload to show updates
-                    this.cdr.detectChanges();
-                },
-                error: (err) => {
-                    console.error(err);
-                    alert('Error updating event');
-                    this.saving = false;
-                    this.cdr.detectChanges();
-                }
-            });
-    }
-
-    approveOrder(orderId: string) {
-        if (!confirm('Approve this reservation?')) return;
-        this.http.post(`${environment.apiUrl}/orders/${orderId}/approve`, {}).subscribe({
+        this.http.post(`${environment.apiUrl}/events/${e.id}`, payload).subscribe({
             next: () => {
-                alert('Order Approved!');
-                // Refresh list
-                if (this.selectedEventForReservations) {
-                    this.viewReservations(this.selectedEventForReservations);
-                }
-                this.loadEvents(); // Update main stats too
+                this.editingEvent = null;
+                this.saving = false;
+                this.notify.toast('Cambios guardados');
+                this.loadEvents();
             },
-            error: (err) => alert('Failed to approve order')
+            error: (err) => {
+                this.saving = false;
+                this.notify.error('No se guardaron los cambios', this.notify.messageOf(err));
+                this.cdr.detectChanges();
+            }
         });
     }
 
-    rejectOrder(orderId: string) {
-        if (!confirm('Reject this reservation and restore stock?')) return;
-        this.http.post(`${environment.apiUrl}/orders/${orderId}/reject`, {}).subscribe({
+    async approveOrder(order: any) {
+        const ok = await this.notify.confirm('¿Ya cobraste esta reserva?',
+            `${order.customerName} recibe sus entradas por email en cuanto confirmes.`, 'Sí, emitir entradas');
+        if (!ok) return;
+        this.http.post(`${environment.apiUrl}/orders/${order.id}/approve`, {}).subscribe({
             next: () => {
-                alert('Order Rejected!');
-                // Refresh list
-                if (this.selectedEventForReservations) {
-                    this.viewReservations(this.selectedEventForReservations);
-                }
+                this.notify.toast('Entradas emitidas');
+                if (this.selectedEventForReservations) this.viewReservations(this.selectedEventForReservations);
                 this.loadEvents();
             },
-            error: (err) => alert('Failed to reject order')
+            error: (err) => this.notify.error('No se pudo aprobar', this.notify.messageOf(err)),
+        });
+    }
+
+    async rejectOrder(order: any) {
+        const ok = await this.notify.confirm('¿Rechazar la reserva?', 'Las entradas vuelven a la venta.', 'Sí, rechazar');
+        if (!ok) return;
+        this.http.post(`${environment.apiUrl}/orders/${order.id}/reject`, {}).subscribe({
+            next: () => {
+                this.notify.toast('Reserva rechazada');
+                if (this.selectedEventForReservations) this.viewReservations(this.selectedEventForReservations);
+                this.loadEvents();
+            },
+            error: (err) => this.notify.error('No se pudo rechazar', this.notify.messageOf(err)),
         });
     }
 }

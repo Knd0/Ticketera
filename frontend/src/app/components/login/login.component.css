@@ -31,3 +31,10 @@ h2 {
 .btn-full {
   width: 100%;
 }
+.hint {
+  margin-top: 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+.hint a { color: #818cf8; }

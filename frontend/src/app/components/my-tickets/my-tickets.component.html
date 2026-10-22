@@ -1,23 +1,23 @@
 <div class="container">
-    <h2>My Tickets</h2>
+    <h2>Mis entradas</h2>
 
     <ng-container *ngIf="{ valid: validTickets$ | async, past: pastTickets$ | async } as data">
 
         <!-- Loading -->
         <div *ngIf="!data.valid && !data.past" class="empty-state">
-            <p>Loading your tickets...</p>
+            <p>Cargando tus entradas…</p>
         </div>
 
         <div *ngIf="data.valid || data.past">
 
             <!-- Valid Tickets -->
             <div *ngIf="data.valid && data.valid.length > 0">
-                <h3 class="section-title">Upcoming Events</h3>
+                <h3 class="section-title">Próximos eventos</h3>
                 <div class="tickets-list">
-                    <div class="ticket-card clickable" *ngFor="let ticket of data.valid" (click)="openQrModal(ticket)">
+                    <div class="ticket-card clickable" *ngFor="let ticket of data.valid" (click)="ticket.qrCode && openQrModal(ticket)">
                         <div class="ticket-image">
-                            <img [src]="ticket.batch?.event?.imageUrl || 'assets/placeholder-event.jpg'"
-                                alt="Event Cover">
+                            <img [src]="ticket.batch?.event?.imageUrl || placeholder"
+                                alt="">
                             <div class="date-badge">
                                 <span class="day">{{ ticket.batch?.event?.date | date:'dd' }}</span>
                                 <span class="month">{{ ticket.batch?.event?.date | date:'MMM' }}</span>
@@ -25,35 +25,37 @@
                         </div>
 
                         <div class="ticket-details">
-                            <h3>{{ ticket.batch?.event?.title || 'Unknown Event' }}</h3>
+                            <h3>{{ ticket.batch?.event?.title || 'Evento' }}</h3>
                             <div class="ticket-info">
-                                <span><i class="fas fa-map-marker-alt"></i> {{ ticket.batch?.event?.location || 'TBA'
-                                    }}</span>
-                                <span><i class="far fa-clock"></i> {{ ticket.batch?.event?.date | date:'shortTime'
-                                    }}</span>
+                                <span><i class="fas fa-map-marker-alt"></i> {{ ticket.batch?.event?.location || 'A confirmar' }}</span>
+                                <span><i class="far fa-clock"></i> {{ ticket.batch?.event?.date | date:'HH:mm' }} h</span>
                             </div>
                             <span class="tier-badge">{{ ticket.batch?.name }}</span>
                             <span class="seat-badge" *ngIf="ticket.seatRow">
-                                💺 Row {{ ticket.seatRow }} - Seat {{ ticket.seatNumber }}
+                                💺 Fila {{ ticket.seatRow }} · Butaca {{ ticket.seatNumber }}
                             </span>
                         </div>
 
                         <div class="ticket-qr-section">
                             <div class="qr-code" *ngIf="ticket.qrCode && ticket.order?.status === 'PAID'">
-                                <img [src]="ticket.qrCode" alt="QR Code">
+                                <img [src]="ticket.qrCode" alt="Código QR">
                             </div>
                             <div class="qr-placeholder"
-                                *ngIf="['PENDING_APPROVAL', 'REJECTED'].includes(ticket.order?.status)">
+                                *ngIf="ticket.order?.status !== 'PAID'">
                                 <i class="fas fa-clock fa-2x"></i>
                             </div>
 
                             <div class="status-badge valid" *ngIf="ticket.order?.status === 'PAID'">
-                                <i class="fas fa-check-circle"></i> Valid Entry
+                                <i class="fas fa-check-circle"></i> Tocá para ver el QR
                             </div>
-                            <!-- Show Pending for both PENDING and REJECTED as requested -->
-                            <div class="status-badge pending"
-                                *ngIf="['PENDING_APPROVAL', 'REJECTED'].includes(ticket.order?.status)">
-                                <i class="fas fa-hourglass-half"></i> Pending Approval
+                            <div class="status-badge pending" *ngIf="ticket.order?.status === 'PENDING_APPROVAL'">
+                                <i class="fas fa-hourglass-half"></i> Esperando que el organizador confirme el pago
+                            </div>
+                            <div class="status-badge pending" *ngIf="ticket.order?.status === 'PENDING'">
+                                <i class="fas fa-hourglass-half"></i> Pago en proceso
+                            </div>
+                            <div class="status-badge used" *ngIf="ticket.order?.status === 'REFUNDED'">
+                                Reintegrada
                             </div>
 
                             <span class="ticket-id">#{{ ticket.code | slice:0:8 }}</span>
@@ -64,29 +66,29 @@
 
             <!-- Past Tickets -->
             <div *ngIf="data.past && data.past.length > 0">
-                <h3 class="section-title" style="margin-top: 2rem;">History</h3>
+                <h3 class="section-title" style="margin-top: 2rem;">Historial</h3>
                 <div class="tickets-list">
                     <div class="ticket-card used" *ngFor="let ticket of data.past">
                         <div class="ticket-image">
-                            <img [src]="ticket.batch?.event?.imageUrl || 'assets/placeholder-event.jpg'"
-                                alt="Event Cover">
+                            <img [src]="ticket.batch?.event?.imageUrl || placeholder"
+                                alt="">
                         </div>
 
                         <div class="ticket-details">
                             <h3>{{ ticket.batch?.event?.title }}</h3>
                             <div class="ticket-info">
-                                <span>{{ ticket.batch?.event?.date | date:'mediumDate' }}</span>
+                                <span>{{ ticket.batch?.event?.date | date:"d 'de' MMM y" }}</span>
                             </div>
                             <span class="tier-badge" style="background: #555;">{{ ticket.batch?.name }}</span>
                             <span class="seat-badge" *ngIf="ticket.seatRow"
                                 style="background: #e5e7eb; color: #6b7280;">
-                                Row {{ ticket.seatRow }} - Seat {{ ticket.seatNumber }}
+                                Fila {{ ticket.seatRow }} · Butaca {{ ticket.seatNumber }}
                             </span>
                         </div>
 
                         <div class="ticket-qr-section">
                             <div class="status-badge used">
-                                {{ ticket.isUsed ? 'Used' : 'Expired' }}
+                                {{ ticket.isUsed ? 'Usada' : 'Vencida' }}
                             </div>
                             <span class="ticket-id">#{{ ticket.code | slice:0:8 }}</span>
                         </div>
@@ -99,10 +101,10 @@
         <!-- Empty State -->
         <div *ngIf="data.valid?.length === 0 && data.past?.length === 0" class="empty-state">
             <i class="fas fa-ticket-alt"></i>
-            <p>You haven't purchased any tickets yet.</p>
+            <p>Todavía no compraste entradas con esta cuenta.</p>
             <button routerLink="/" class="btn-primary"
                 style="margin-top: 1rem; padding: 10px 20px; background: #9d4edd; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                Browse Events
+                Ver eventos
             </button>
         </div>
 
@@ -111,29 +113,29 @@
     <!-- Full Screen QR Modal -->
     <div class="qr-modal-backdrop" *ngIf="selectedTicket" (click)="closeQrModal()">
         <div class="qr-modal-content" (click)="$event.stopPropagation()">
-            <button class="close-modal-btn" (click)="closeQrModal()">×</button>
+            <button class="close-modal-btn" (click)="closeQrModal()" aria-label="Cerrar">×</button>
 
             <div class="modal-header">
-                <h3>{{ selectedTicket.batch?.event?.title || 'Event' }}</h3>
-                <p>{{ selectedTicket.batch?.event?.date | date:'fullDate' }}</p>
+                <h3>{{ selectedTicket.batch?.event?.title || 'Evento' }}</h3>
+                <p>{{ selectedTicket.batch?.event?.date | date:"EEEE d 'de' MMMM, HH:mm 'h'" }}</p>
                 <div *ngIf="selectedTicket.seatRow" class="modal-seat-info">
-                    Row {{ selectedTicket.seatRow }} | Seat {{ selectedTicket.seatNumber }}
+                    Fila {{ selectedTicket.seatRow }} · Butaca {{ selectedTicket.seatNumber }}
                 </div>
             </div>
 
             <div class="qr-container-large">
-                <img [src]="selectedTicket.qrCode" alt="QR Code">
+                <img [src]="selectedTicket.qrCode" alt="Código QR de la entrada">
             </div>
 
             <div class="ticket-code-display">
-                <span class="label">Ticket Code</span>
+                <span class="label">Código</span>
                 <span class="code">{{ selectedTicket.code }}</span>
             </div>
 
             <div class="modal-status"
                 [ngClass]="{'modal-valid': !selectedTicket.isUsed, 'modal-used': selectedTicket.isUsed}">
                 <i class="fas" [ngClass]="selectedTicket.isUsed ? 'fa-history' : 'fa-check-circle'"></i>
-                {{ selectedTicket.isUsed ? 'Already Used' : 'Ready to Scan' }}
+                {{ selectedTicket.isUsed ? 'Ya se usó' : 'Lista para el ingreso · subí el brillo de la pantalla' }}
             </div>
         </div>
     </div>

@@ -348,7 +348,11 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
             totalAmount: Number(order.totalAmount),
             paymentMethod: order.paymentMethod,
             customerName: order.customerName,
-            event: event ? { id: event.id, title: event.title, date: event.date, location: event.location } : null,
+            event: event ? {
+                id: event.id, title: event.title, date: event.date, location: event.location,
+                // Los datos para transferir sólo se muestran a quien tiene una reserva pendiente.
+                paymentInstructions: order.status === 'PENDING_APPROVAL' ? event.paymentInstructions ?? null : null,
+            } : null,
             tickets,
         };
     }
@@ -507,7 +511,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
             .innerJoin('item.order', 'order')
             .where('event.producerId = :userId', { userId })
             .andWhere('order.status = :status', { status: 'PAID' })
-            .select('event.title', 'title')
+            .select('event.id', 'eventId')
+            .addSelect('event.title', 'title')
             .addSelect('SUM(item.price * item.quantity)', 'revenue')
             .addSelect('SUM(item.quantity)', 'tickets')
             .groupBy('event.id')
@@ -530,7 +535,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
             .getRawMany();
 
         return {
-            salesByEvent: salesByEvent.map(r => ({ title: r.title, revenue: Number(r.revenue), tickets: Number(r.tickets) })),
+            salesByEvent: salesByEvent.map(r => ({ eventId: r.eventId, title: r.title, revenue: Number(r.revenue), tickets: Number(r.tickets) })),
             dailyStats,
         };
     }

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-terms',
@@ -22,4 +23,6 @@ import { CommonModule } from '@angular/common';
     strong { color: #ccc; }
   `]
 })
-export class TermsComponent {}
+export class TermsComponent {
+  brand = environment.brandName;
+}

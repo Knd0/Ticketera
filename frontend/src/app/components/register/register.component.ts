@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { NotifyService } from '../../services/notify.service';
 
 @Component({
   selector: 'app-register',
@@ -10,45 +11,45 @@ import { AuthService } from '../../services/auth.service';
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <div class="register-container">
-      <h2>Join Ticketera</h2>
+      <h2>Creá tu cuenta</h2>
       
       <!-- STEP 1: ROLE SELECTION -->
       <div *ngIf="currentStep === 1" class="step-role">
-          <h3>Are you looking to buy tickets or organize events?</h3>
+          <h3>¿Querés comprar entradas o vender las de tus eventos?</h3>
           <div class="role-cards">
               <div class="role-card" (click)="selectRole('user')">
                   <div class="icon">🎟️</div>
-                  <h4>Ticket Buyer</h4>
-                  <p>Discover events, buy tickets, and manage your orders. It's free!</p>
+                  <h4>Compro entradas</h4>
+                  <p>Encontrá eventos, comprá tus entradas y tenelas siempre a mano. Es gratis.</p>
               </div>
               <div class="role-card producer" (click)="selectRole('producer')">
                   <div class="icon">🎭</div>
-                  <h4>Event Producer</h4>
-                  <p>Create listed events, manage sales, and scan tickets. Join our network.</p>
+                  <h4>Organizo eventos</h4>
+                  <p>Publicá tus eventos, cobrá con Mercado Pago o transferencia y controlá el ingreso con el celular.</p>
               </div>
           </div>
-          <p class="login-link">Already have an account? <a routerLink="/login">Login here</a></p>
+          <p class="login-link">¿Ya tenés cuenta? <a routerLink="/login">Ingresá</a></p>
       </div>
 
       <!-- STEP 2: DETAILS FORM -->
       <form *ngIf="currentStep === 2" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-        <button type="button" class="back-btn" (click)="currentStep = 1">← Back</button>
+        <button type="button" class="back-btn" (click)="currentStep = 1">← Volver</button>
         
         <div class="form-header">
-            <h3>{{ isProducer ? 'Producer Registration' : 'Create Account' }}</h3>
-            <p>{{ isProducer ? 'Start selling your tickets in minutes.' : 'Get ready to experience the best events.' }}</p>
+            <h3>{{ isProducer ? 'Cuenta de productor' : 'Cuenta de comprador' }}</h3>
+            <p>{{ isProducer ? 'En minutos podés tener tu primer evento a la venta.' : 'Tus entradas, siempre en el celular.' }}</p>
         </div>
 
         <!-- COMMON FIELDS -->
         <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" formControlName="email" placeholder="name@example.com">
+          <label>Email</label>
+          <input type="email" formControlName="email" placeholder="tu@email.com" autocomplete="email">
         </div>
         
         <div class="form-group">
-          <label>Password</label>
+          <label>Contraseña</label>
           <div class="password-wrapper">
-            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Mínimo 8 caracteres">
+            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
             <button type="button" class="password-toggle" (click)="togglePassword()">
                 <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
             </button>
@@ -58,43 +59,46 @@ import { AuthService } from '../../services/auth.service';
         <!-- USER SPECIFIC -->
         <ng-container *ngIf="!isProducer">
             <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" formControlName="fullName" placeholder="Your full name">
+                <label>Nombre y apellido</label>
+                <input type="text" formControlName="fullName" placeholder="Como figura en tu DNI">
             </div>
             <div class="form-group">
-                <label>Document ID (DNI)</label>
-                <input type="text" formControlName="dni" placeholder="Ex: 12345678">
+                <label>DNI</label>
+                <input type="text" formControlName="dni" placeholder="Ej.: 30111222" inputmode="numeric">
             </div>
             <div class="form-group">
-                <label>Phone</label>
-                <input type="text" formControlName="phone" placeholder="Mobile Number">
+                <label>Celular</label>
+                <input type="text" formControlName="phone" placeholder="Ej.: 345 4123456" inputmode="tel">
             </div>
         </ng-container>
 
         <!-- PRODUCER SPECIFIC -->
         <ng-container *ngIf="isProducer">
             <div class="form-group">
-                <label>Organization / Company Name</label>
-                <input type="text" formControlName="fullName" placeholder="Event Production Co.">
-            </div>
-            <!-- CUIT REMOVED -->
-            <div class="form-group">
-                <label>Website / Social Link</label>
-                <input type="text" formControlName="website" placeholder="https://instagram.com/myevents">
+                <label>Nombre de la productora</label>
+                <input type="text" formControlName="fullName" placeholder="Ej.: Producciones del Litoral">
             </div>
             <div class="form-group">
-                <label>Short Bio / Description</label>
-                <textarea formControlName="description" placeholder="Tell us about the events you organize..."></textarea>
+                <label>Celular de contacto</label>
+                <input type="text" formControlName="phone" placeholder="Ej.: 345 4123456" inputmode="tel">
             </div>
             <div class="form-group">
-                 <label>Profile Image URL</label>
+                <label>Web o Instagram</label>
+                <input type="text" formControlName="website" placeholder="https://instagram.com/tuproductora">
+            </div>
+            <div class="form-group">
+                <label>Contá en pocas palabras qué eventos hacés</label>
+                <textarea formControlName="description" placeholder="Fiestas, recitales, obras de teatro…"></textarea>
+            </div>
+            <div class="form-group">
+                 <label>Logo (link a la imagen, opcional)</label>
                  <input type="text" formControlName="profileImageUrl" placeholder="https://...">
             </div>
         </ng-container>
         
         <button type="submit" [disabled]="registerForm.invalid || loading">
-             <span *ngIf="loading">Creating Account...</span>
-             <span *ngIf="!loading">Complete Registration</span>
+             <span *ngIf="loading">Creando la cuenta…</span>
+             <span *ngIf="!loading">Crear cuenta</span>
         </button>
         <p class="error-msg" *ngIf="error">{{ error }}</p>
       </form>
@@ -114,6 +118,7 @@ import { AuthService } from '../../services/auth.service';
     .step-role h3 { margin-bottom: 2rem; opacity: 0.8; }
     
     .role-cards { display: grid; gap: 1.5rem; grid-template-columns: 1fr 1fr; margin-bottom: 2rem; }
+    @media (max-width: 560px) { .role-cards { grid-template-columns: 1fr; } .register-container { margin: 1.5rem 1rem; padding: 1.5rem; } }
     .role-card {
         background: var(--background);
         border: 1px solid var(--border);
@@ -179,6 +184,7 @@ export class RegisterComponent {
   fb = inject(FormBuilder);
   authService = inject(AuthService);
   router = inject(Router);
+  notify = inject(NotifyService);
 
   loading = false;
   error = '';
@@ -234,14 +240,11 @@ export class RegisterComponent {
 
       const formVal = this.registerForm.value;
 
-      // Auto-generate username from email
-      const username = formVal.email.split('@')[0] + '_' + Math.floor(Math.random() * 1000);
-
-      const payload = {
+      const payload: any = {
         ...formVal,
-        username,
         role: this.isProducer ? 'producer' : 'user'
       };
+      if (this.isProducer) payload.organizationName = formVal.fullName;
 
       // Clean up empty fields based on role if needed, or backend handles nulls
       if (!this.isProducer) {
@@ -253,18 +256,19 @@ export class RegisterComponent {
 
       this.authService.register(payload).subscribe({
         next: () => {
-          this.loading = false;
-          alert('Registration successful! Please login with your Email.');
-          this.router.navigate(['/login']);
+          // Entra directo, sin volver a pedir los datos.
+          this.authService.login({ email: formVal.email, password: formVal.password }).subscribe({
+            next: () => {
+              this.loading = false;
+              this.notify.toast('¡Bienvenido! Tu cuenta está lista.');
+              this.router.navigateByUrl(this.authService.homeFor(this.authService.currentUser));
+            },
+            error: () => { this.loading = false; this.router.navigate(['/login']); },
+          });
         },
         error: (err) => {
           this.loading = false;
-          console.error(err);
-          if (err.error && err.error.message) {
-            this.error = err.error.message;
-          } else {
-            this.error = 'Registration failed. Try a different email.';
-          }
+          this.error = this.notify.messageOf(err, 'No pudimos crear la cuenta. Probá de nuevo.');
         }
       });
     } else {

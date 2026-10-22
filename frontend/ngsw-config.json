@@ -28,27 +28,15 @@
     ],
     "dataGroups": [
         {
-            "name": "api-freshness",
+            "name": "config",
             "urls": [
-                "https://api.ticketera.com/events",
-                "http://localhost:3000/events"
+                "/config/**"
             ],
             "cacheConfig": {
                 "strategy": "freshness",
-                "maxSize": 100,
-                "maxAge": "1h",
-                "timeout": "5s"
-            }
-        },
-        {
-            "name": "api-performance",
-            "urls": [
-                "http://localhost:3000/public/assets"
-            ],
-            "cacheConfig": {
-                "strategy": "performance",
-                "maxSize": 100,
-                "maxAge": "1d"
+                "maxSize": 5,
+                "maxAge": "1d",
+                "timeout": "3s"
             }
         }
     ]

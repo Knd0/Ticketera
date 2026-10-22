@@ -1,190 +1,141 @@
-<div class="checkout-container fade-in" *ngIf="purchaseSuccess; else checkoutFlow">
-    <!-- Success View -->
-    <div class="success-container">
-        <div class="success-header">
-            <h2>🎉 Purchase Successful!</h2>
-            <p>Your order ID: {{ purchasedOrder?.id }}</p>
-            <p class="email-note">We sent a copy to {{ purchasedOrder?.customerEmail }}</p>
-        </div>
+<div class="container checkout-layout" *ngIf="!loadError; else errorTpl">
+    <h1 class="page-title">Finalizá tu compra</h1>
 
-        <div class="tickets-list">
-            <div class="ticket-card" *ngFor="let ticket of purchasedTickets; let i = index">
-                <div class="ticket-info">
-                    <h3>Ticket #{{ i + 1 }}</h3>
-                    <p class="code">Code: {{ ticket.code }}</p>
+    <div class="product-summary-card" *ngIf="event && batch">
+        <div class="product-row header-row">
+            <span class="col-event">Evento</span>
+            <span class="col-product">Entrada</span>
+            <span class="col-price">Precio</span>
+            <span class="col-qty">Cantidad</span>
+            <span class="col-total">Subtotal</span>
+        </div>
+        <div class="product-row content-row">
+            <div class="col-event event-details">
+                <div class="event-thumb" [style.background-image]="'url(' + (event.imageUrl || placeholder) + ')'"></div>
+                <div class="event-text">
+                    <h4>{{ event.title }}</h4>
+                    <span class="event-date">{{ event.date | date:"EEE d 'de' MMM, HH:mm 'h'" }}</span>
                 </div>
-                <div class="qr-code">
-                    <img [src]="ticket.qrCode" alt="QR Code">
-                </div>
-                <!-- Mock Download -->
-                <a [href]="ticket.qrCode" download="ticket-{{ticket.code}}.png"
-                    class="btn btn-sm btn-outline">Download</a>
+            </div>
+            <div class="col-product product-name">
+                {{ batch.name }}
+                <small *ngIf="seats.length" class="seats">Butacas: <span *ngFor="let s of seats; let last = last">{{ s.row }}-{{ s.number }}{{ last ? '' : ', ' }}</span></small>
+            </div>
+            <div class="col-price">{{ unitPrice | currency:'ARS':'symbol-narrow':'1.0-2' }}</div>
+            <div class="col-qty">{{ quantity }}</div>
+            <div class="col-total">{{ subTotal | currency:'ARS':'symbol-narrow':'1.0-2' }}</div>
+        </div>
+    </div>
+
+    <form [formGroup]="checkoutForm" (ngSubmit)="onSubmit()" class="checkout-grid" novalidate>
+        <div class="buyer-section">
+            <h2>Tus datos</h2>
+
+            <div class="form-group">
+                <label for="fullName">Nombre y apellido</label>
+                <input id="fullName" type="text" formControlName="fullName" class="input-field" placeholder="Como figura en tu DNI" autocomplete="name">
+                <small class="field-error" *ngIf="invalid('fullName')">Completá tu nombre.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input id="email" type="email" formControlName="email" class="input-field" placeholder="Acá te llegan las entradas" autocomplete="email">
+                <small class="field-error" *ngIf="invalid('email')">Revisá el email.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmEmail">Repetí el email</label>
+                <input id="confirmEmail" type="email" formControlName="confirmEmail" class="input-field" placeholder="Para evitar errores de tipeo" autocomplete="email">
+                <small class="field-error" *ngIf="checkoutForm.hasError('emailMismatch') && checkoutForm.get('confirmEmail')?.touched">Los emails no coinciden.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Celular</label>
+                <input id="phone" type="tel" formControlName="phone" class="input-field" placeholder="Ej.: 345 4123456" autocomplete="tel">
+                <small class="field-error" *ngIf="invalid('phone')">Completá tu celular.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="documentId">DNI o pasaporte</label>
+                <input id="documentId" type="text" formControlName="documentId" class="input-field" placeholder="Puede pedirse en el ingreso">
+                <small class="field-error" *ngIf="invalid('documentId')">Completá tu documento.</small>
             </div>
         </div>
 
-        <a routerLink="/" class="btn btn-primary btn-full" style="margin-top: 2rem;">Back to Home</a>
-    </div>
+        <div class="payment-summary-section">
+            <div class="warning-box">
+                Revisá que el email sea correcto: ahí te mandamos las entradas con su código QR.
+            </div>
+
+            <h3>Forma de pago</h3>
+            <div class="payment-options">
+                <label class="payment-option" *ngIf="paymentMethods.includes(MP)">
+                    <input type="radio" formControlName="paymentMethod" [value]="MP">
+                    <span class="radio-label">Mercado Pago</span>
+                    <div class="logos">Tarjetas, débito o dinero en cuenta · entradas al instante</div>
+                </label>
+
+                <label class="payment-option" *ngIf="paymentMethods.includes(CASH)">
+                    <input type="radio" formControlName="paymentMethod" [value]="CASH">
+                    <span class="radio-label">Transferencia o efectivo</span>
+                    <div class="logos">Reservás ahora y el organizador te confirma cuando recibe el pago</div>
+                </label>
+
+                <div *ngIf="event && paymentMethods.length === 0" class="no-methods-warning">
+                    Este evento no tiene formas de pago habilitadas todavía.
+                </div>
+            </div>
+
+            <div class="price-summary-box">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>{{ subTotal | currency:'ARS':'symbol-narrow':'1.0-2' }}</span>
+                </div>
+
+                <div class="promo-row">
+                    <div class="promo-input-group" *ngIf="!promoApplied">
+                        <input type="text" [(ngModel)]="promoCode" [ngModelOptions]="{standalone: true}"
+                            placeholder="Código de descuento" aria-label="Código de descuento" (keydown.enter)="$event.preventDefault(); applyPromo()">
+                        <button type="button" (click)="applyPromo()" [disabled]="!promoCode.trim()">Aplicar</button>
+                    </div>
+                    <div class="discount-display" *ngIf="promoApplied">
+                        <span>Descuento {{ promoCode }} ({{ discountPercentage }}%)</span>
+                        <span>−{{ discountAmount | currency:'ARS':'symbol-narrow':'1.0-2' }}</span>
+                        <button type="button" class="link-btn" (click)="removePromo()">Quitar</button>
+                    </div>
+                </div>
+
+                <div class="summary-row fee-row" *ngIf="serviceFee > 0">
+                    <span>Cargo por servicio</span>
+                    <span>{{ serviceFee | currency:'ARS':'symbol-narrow':'1.0-2' }}</span>
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-row total-row">
+                    <span>Total</span>
+                    <span>{{ finalTotal | currency:'ARS':'symbol-narrow':'1.0-2' }}</span>
+                </div>
+
+                <label class="terms-check">
+                    <input type="checkbox" formControlName="acceptTerms">
+                    <span>Acepto los <a routerLink="/terms" target="_blank">términos</a> y la <a routerLink="/privacy" target="_blank">política de privacidad</a>.</span>
+                </label>
+
+                <button type="submit" [disabled]="isSubmitting || !batch || paymentMethods.length === 0" class="btn btn-block btn-pay">
+                    {{ isSubmitting ? 'Procesando…' : (checkoutForm.get('paymentMethod')?.value === MP ? 'Pagar con Mercado Pago' : 'Confirmar reserva') }}
+                </button>
+                <p class="terms-text" *ngIf="checkoutForm.get('paymentMethod')?.value === MP">
+                    Tenés {{ config.paymentWindowMinutes }} minutos para completar el pago; si no, las entradas vuelven a la venta.
+                </p>
+            </div>
+        </div>
+    </form>
 </div>
 
-<ng-template #checkoutFlow>
-    <div class="container checkout-layout">
-        <h1 class="page-title">Comprando</h1>
-
-        <!-- 1. Event/Product Row -->
-        <div class="product-summary-card" *ngIf="event && batch">
-            <div class="product-row header-row">
-                <span class="col-event">Evento</span>
-                <span class="col-product">Producto</span>
-                <span class="col-price">Precio</span>
-                <span class="col-qty">Cantidad</span>
-                <span class="col-total">Sub Total</span>
-            </div>
-            <div class="product-row content-row">
-                <div class="col-event event-details">
-                    <div class="event-thumb"
-                        [style.background-image]="'url(' + (event.imageUrl || 'assets/placeholder.jpg') + ')'"></div>
-                    <div class="event-text">
-                        <h4>{{ event.title }}</h4>
-                        <span class="event-date">{{ event.date | date:'mediumDate' }} at {{ event.date |
-                            date:'shortTime' }}</span>
-                    </div>
-                </div>
-                <div class="col-product product-name">
-                    {{ batch.name }}
-                </div>
-                <div class="col-price">
-                    {{ unitPrice | currency }}
-                </div>
-                <div class="col-qty">
-                    {{ quantity }}
-                </div>
-                <div class="col-total">
-                    {{ subTotal | currency }}
-                </div>
-                <!-- Remove button 'x' placeholder -->
-            </div>
-        </div>
-
-        <!-- 2. Timer Header -->
-        <div class="timer-bar">
-            <span class="timer-icon">🕒</span>
-            <span class="timer-value">{{ timerDisplay }}</span>
-            <p>Tienes 10 minutos para realizar la compra.</p>
-        </div>
-
-        <!-- 3. Form & Payment Grid -->
-        <form [formGroup]="checkoutForm" (ngSubmit)="onSubmit()" class="checkout-grid">
-
-            <!-- Left: Buyer Data -->
-            <div class="buyer-section">
-                <h2>Datos del Comprador</h2>
-
-                <div class="form-group">
-                    <label>Nombre y Apellido</label>
-                    <input type="text" formControlName="fullName" class="input-field" placeholder="Nombre y apellido">
-                </div>
-
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" formControlName="email" class="input-field"
-                        placeholder="Ingresa tu correo electrónico">
-                </div>
-
-                <div class="form-group">
-                    <label>Repetir Email</label>
-                    <input type="email" formControlName="confirmEmail" class="input-field" placeholder="Repetir email">
-                </div>
-
-                <div class="form-group">
-                    <label>Teléfono</label>
-                    <input type="tel" formControlName="phone" class="input-field" placeholder="+549 Tu teléfono">
-                </div>
-
-                <div class="form-group">
-                    <label>DNI / Passport ID</label>
-                    <input type="text" formControlName="documentId" class="input-field"
-                        placeholder="Ingresa tu DNI/ Pasaporte ID">
-                </div>
-            </div>
-
-            <!-- Right: Payment & Summary -->
-            <div class="payment-summary-section">
-                <!-- Payment Methods -->
-                <!-- Note: Added warning box from screenshot -->
-                <div class="warning-box">
-                    ATENCIÓN: Verifica que tu correo y teléfono sean correctos: allí recibirás los accesos al evento.
-                </div>
-
-                <h3>Selecciona tu forma de pago</h3>
-                <div class="payment-options">
-
-                    <ng-container *ngIf="event?.paymentMethods?.includes('MercadoPago')">
-                        <label class="payment-option">
-                            <input type="radio" formControlName="paymentMethod" value="MercadoPago">
-                            <span class="radio-label">Mercado Pago</span>
-                            <div class="logos">
-                                <span class="logo-box">🤝</span> MP / Tarjetas
-                            </div>
-                        </label>
-                    </ng-container>
-
-                    <ng-container *ngIf="event?.paymentMethods?.includes('Cash / Bank Transfer')">
-                        <label class="payment-option">
-                            <input type="radio" formControlName="paymentMethod" value="Cash / Bank Transfer">
-                            <span class="radio-label">Transferencia / Efectivo</span>
-                            <div class="logos">
-                                <span class="logo-box">🏦</span> Bank
-                            </div>
-                        </label>
-                    </ng-container>
-
-                    <div *ngIf="!event?.paymentMethods || event?.paymentMethods?.length === 0"
-                        class="no-methods-warning">
-                        No payment methods available for this event.
-                    </div>
-
-                </div>
-
-                <!-- Price Summary -->
-                <div class="price-summary-box">
-                    <div class="summary-row">
-                        <span>Subtotal</span>
-                        <span>{{ subTotal | currency }}</span>
-                    </div>
-
-                    <!-- Promo Code Input Mock inside Summary -->
-                    <div class="promo-row">
-                        <div class="promo-input-group">
-                            <input type="text" [(ngModel)]="promoCode" [ngModelOptions]="{standalone: true}"
-                                placeholder="Promo Code" [disabled]="promoApplied">
-                            <button type="button" (click)="applyPromo()" [disabled]="promoApplied">Apply</button>
-                        </div>
-                        <div class="discount-display" *ngIf="promoApplied">
-                            Saved: -{{ discountAmount | currency }}
-                        </div>
-                    </div>
-
-                    <div class="summary-row fee-row">
-                        <span>Cargo por servicio</span>
-                        <span>{{ serviceFee | currency }}</span>
-                    </div>
-
-                    <div class="summary-divider"></div>
-
-                    <div class="summary-row total-row">
-                        <span>Total</span>
-                        <span>{{ finalTotal | currency }}</span>
-                    </div>
-
-                    <p class="terms-text">Por favor, verifica tus datos antes de realizar la compra.</p>
-
-                    <button type="submit" [disabled]="checkoutForm.invalid || isSubmitting"
-                        class="btn btn-block btn-pay">
-                        {{ isSubmitting ? 'Procesando...' : 'COMPRAR' }}
-                    </button>
-                </div>
-            </div>
-
-        </form>
+<ng-template #errorTpl>
+    <div class="container" style="text-align: center; margin-top: 5rem;">
+        <h2>{{ loadError }}</h2>
+        <a routerLink="/" class="btn btn-outline">Ver eventos</a>
     </div>
 </ng-template>
