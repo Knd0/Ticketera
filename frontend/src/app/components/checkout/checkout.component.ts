@@ -1,9 +1,21 @@
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, FormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { OrdersService } from '../../services/orders.service';
+import { OrdersService, CheckoutConfig } from '../../services/orders.service';
 import { EventsService } from '../../services/events.service';
+import { AuthService } from '../../services/auth.service';
+import { NotifyService } from '../../services/notify.service';
+import { EVENT_PLACEHOLDER } from '../../shared/catalog';
+
+export const MP_METHOD = 'MercadoPago';
+export const CASH_METHOD = 'Cash / Bank Transfer';
+
+function sameEmail(group: AbstractControl): ValidationErrors | null {
+    const a = String(group.get('email')?.value || '').trim().toLowerCase();
+    const b = String(group.get('confirmEmail')?.value || '').trim().toLowerCase();
+    return a && b && a !== b ? { emailMismatch: true } : null;
+}
 
 @Component({
     selector: 'app-checkout',
@@ -13,21 +25,29 @@ import { EventsService } from '../../services/events.service';
     styleUrl: './checkout.component.css'
 })
 export class CheckoutComponent {
-    route = inject(ActivatedRoute);
-    fb = inject(FormBuilder);
-    ordersService = inject(OrdersService);
-    eventsService = inject(EventsService); // Injected to fetch details
-    router = inject(Router);
+    private route = inject(ActivatedRoute);
+    private fb = inject(FormBuilder);
+    private ordersService = inject(OrdersService);
+    private eventsService = inject(EventsService);
+    private auth = inject(AuthService);
+    private notify = inject(NotifyService);
+    private router = inject(Router);
+
+    readonly MP = MP_METHOD;
+    readonly CASH = CASH_METHOD;
+    placeholder = EVENT_PLACEHOLDER;
 
     eventId = this.route.snapshot.queryParamMap.get('eventId');
     batchId = this.route.snapshot.queryParamMap.get('batchId');
-    quantity = Number(this.route.snapshot.queryParamMap.get('quantity')) || 1;
+    quantity = Math.max(1, Math.min(50, Number(this.route.snapshot.queryParamMap.get('quantity')) || 1));
     seatsParam = this.route.snapshot.queryParamMap.get('seats');
+    seats: { row: string; number: string }[] = this.parseSeats();
 
     event: any = null;
     batch: any = null;
+    config: CheckoutConfig = { serviceFeePercent: 15, mercadoPago: false, paymentWindowMinutes: 30 };
+    loadError = '';
 
-    // Pricing
     unitPrice = 0;
     subTotal = 0;
     serviceFee = 0;
@@ -38,152 +58,130 @@ export class CheckoutComponent {
     promoApplied = false;
     discountPercentage = 0;
 
-    // Timer
-    timeLeft: number = 600; // 10 minutes in seconds
-    timerDisplay = '10:00';
-    intervalId: any;
-
     checkoutForm = this.fb.group({
         fullName: ['', Validators.required],
         email: ['', [Validators.required, Validators.email]],
+        confirmEmail: ['', [Validators.required, Validators.email]],
         phone: ['', Validators.required],
         documentId: ['', Validators.required],
-        confirmEmail: ['', [Validators.required, Validators.email]], // Added per screenshot
-        paymentMethod: ['', Validators.required] // Added per screenshot
-    });
+        paymentMethod: ['', Validators.required],
+        acceptTerms: [false, Validators.requiredTrue],
+    }, { validators: sameEmail });
 
-    purchaseSuccess = false;
-    purchasedTickets: any[] = [];
-    purchasedOrder: any = null;
     isSubmitting = false;
 
     ngOnInit() {
-        if (this.eventId) {
-            this.fetchDetails();
+        const user = this.auth.currentUser;
+        if (user) {
+            this.checkoutForm.patchValue({ fullName: user.fullName || '', email: user.email || '', confirmEmail: user.email || '' });
         }
-        this.startTimer();
-    }
-
-    ngOnDestroy() {
-        if (this.intervalId) clearInterval(this.intervalId);
-    }
-
-    fetchDetails() {
-        if (!this.eventId) return;
-        this.eventsService.getEvent(this.eventId).subscribe(ev => {
-            this.event = ev;
-
-            // Mercado Pago todavía no está integrado de verdad (el backend lo
-            // rechaza fuera del modo demo), así que por ahora sólo se ofrece
-            // efectivo / transferencia, que aprueba el productor.
-            this.event.paymentMethods = ['Cash / Bank Transfer'];
-            this.checkoutForm?.get('paymentMethod')?.setValue('Cash / Bank Transfer');
-
-            // Find batch
-            if (this.batchId && this.event.batches) {
-                this.batch = this.event.batches.find((b: any) => b.id === this.batchId);
-                if (this.batch) {
-                    this.unitPrice = Number(this.batch.price);
-                    this.calculateTotals();
-                }
-            }
+        if (!this.eventId || !this.batchId) {
+            this.loadError = 'Elegí primero el evento y las entradas.';
+            return;
+        }
+        this.ordersService.config$.subscribe({ next: c => { this.config = c; this.setup(); }, error: () => this.setup() });
+        this.eventsService.getEvent(this.eventId).subscribe({
+            next: ev => { this.event = ev; this.setup(); },
+            error: () => this.loadError = 'No encontramos este evento.',
         });
     }
 
-    startTimer() {
-        this.intervalId = setInterval(() => {
-            if (this.timeLeft > 0) {
-                this.timeLeft--;
-                const m = Math.floor(this.timeLeft / 60);
-                const s = this.timeLeft % 60;
-                this.timerDisplay = `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
-            } else {
-                clearInterval(this.intervalId);
-                alert('Time expired!');
-                this.router.navigate(['/']);
-            }
-        }, 1000);
+    private parseSeats() {
+        try { return this.seatsParam ? JSON.parse(this.seatsParam) : []; } catch { return []; }
+    }
+
+    /** Medios de pago que el productor aceptó y que la plataforma puede cobrar. */
+    get paymentMethods(): string[] {
+        const accepted: string[] = this.event?.paymentMethods?.length ? this.event.paymentMethods : [CASH_METHOD];
+        return accepted.filter(m => m !== MP_METHOD || this.config.mercadoPago);
+    }
+
+    private setup() {
+        if (!this.event) return;
+        this.batch = this.event.batches?.find((b: any) => b.id === this.batchId) ?? null;
+        if (!this.batch) { this.loadError = 'Esa entrada ya no está disponible.'; return; }
+        this.unitPrice = Number(this.batch.price);
+        const methods = this.paymentMethods;
+        const current = this.checkoutForm.get('paymentMethod')!.value;
+        if (!current || !methods.includes(current)) {
+            this.checkoutForm.get('paymentMethod')!.setValue(methods.length === 1 ? methods[0] : '');
+        }
+        this.calculateTotals();
     }
 
     calculateTotals() {
-        this.subTotal = this.unitPrice * this.quantity;
-
-        // Discount applies to Subtotal only
-        this.discountAmount = this.promoApplied ? (this.subTotal * (this.discountPercentage / 100)) : 0;
-
-        // Service Fee is 15% of SubTotal (usually fee is on base price, prompt says "bajar precio entrada, no servicio")
-        this.serviceFee = this.subTotal * 0.15;
-
-        this.finalTotal = (this.subTotal - this.discountAmount) + this.serviceFee;
+        const r = (n: number) => Math.round(n * 100) / 100;
+        this.subTotal = r(this.unitPrice * this.quantity);
+        this.discountAmount = this.promoApplied ? r(this.subTotal * (this.discountPercentage / 100)) : 0;
+        // El cargo por servicio se calcula sobre el precio de lista, igual que en el servidor.
+        this.serviceFee = r(this.subTotal * (this.config.serviceFeePercent / 100));
+        this.finalTotal = r(this.subTotal - this.discountAmount + this.serviceFee);
     }
 
     applyPromo() {
-        const code = this.checkoutForm.get('promoCode')?.value;
+        const code = this.promoCode.trim();
         if (!code) return;
-
         this.ordersService.validatePromo(code).subscribe({
             next: (res) => {
-                if (res.valid) {
-                    this.promoApplied = true;
-                    this.discountPercentage = res.discountPercentage;
-                    this.calculateTotals(); // Recalculate
-                    alert(`Promo applied! ${res.discountPercentage}% off ticket price.`);
-                }
+                this.promoApplied = true;
+                this.promoCode = res.code;
+                this.discountPercentage = res.discountPercentage;
+                this.calculateTotals();
+                this.notify.toast(`Descuento del ${res.discountPercentage}% aplicado`);
             },
             error: (err) => {
-                console.error(err);
-                alert('Invalid promo code');
                 this.promoApplied = false;
                 this.discountPercentage = 0;
                 this.calculateTotals();
+                this.notify.toast(this.notify.messageOf(err, 'Ese código no es válido.'), 'error');
             }
         });
     }
 
+    removePromo() {
+        this.promoApplied = false;
+        this.discountPercentage = 0;
+        this.promoCode = '';
+        this.calculateTotals();
+    }
+
+    invalid(name: string) {
+        const c = this.checkoutForm.get(name);
+        return !!c && c.invalid && c.touched;
+    }
+
     onSubmit() {
-        if (this.checkoutForm.valid) {
-            const formValue = this.checkoutForm.value;
-
-            if (formValue.email !== formValue.confirmEmail) {
-                alert('Emails do not match');
-                return;
-            }
-
-            const orderData = {
-                items: [{
-                    batchId: this.batchId!,
-                    quantity: this.quantity,
-                    seats: this.seatsParam || undefined
-                }],
-                customerInfo: {
-                    name: formValue.fullName,
-                    email: formValue.email,
-                    phone: formValue.phone,
-                    docId: formValue.documentId
-                },
-                promoCode: this.promoApplied ? this.promoCode : undefined,
-                paymentMethod: formValue.paymentMethod
-            };
-
-            this.isSubmitting = true;
-
-            console.log('Sending order request...');
-            this.ordersService.createOrder(orderData).subscribe({
-                next: (res) => {
-                    console.log('Order created successfully', res);
-                    this.purchaseSuccess = true;
-                    this.purchasedOrder = res.order;
-                    this.purchasedTickets = res.tickets;
-                    clearInterval(this.intervalId);
-                    this.isSubmitting = false;
-                    console.log('State updated: purchaseSuccess=true');
-                },
-                error: (err) => {
-                    console.error('Order creation failed', err);
-                    alert('Error processing order: ' + err.message);
-                    this.isSubmitting = false;
-                }
-            });
+        if (this.checkoutForm.invalid || !this.batch) {
+            this.checkoutForm.markAllAsTouched();
+            return;
         }
+        const v = this.checkoutForm.value;
+        const orderData = {
+            items: [{ batchId: this.batchId!, quantity: this.quantity, seats: this.seatsParam || undefined }],
+            customerInfo: {
+                name: v.fullName!.trim(),
+                email: v.email!.trim(),
+                phone: v.phone!.trim(),
+                docId: v.documentId!.trim(),
+            },
+            promoCode: this.promoApplied ? this.promoCode : undefined,
+            paymentMethod: v.paymentMethod,
+        };
+
+        this.isSubmitting = true;
+        this.ordersService.createOrder(orderData).subscribe({
+            next: (res) => {
+                if (res.paymentLink) {
+                    // A Mercado Pago. Al volver, /checkout/resultado confirma el pago.
+                    window.location.href = res.paymentLink;
+                    return;
+                }
+                this.router.navigate(['/checkout/resultado'], { queryParams: { orden: res.order.id } });
+            },
+            error: (err) => {
+                this.isSubmitting = false;
+                this.notify.error('No pudimos tomar tu pedido', this.notify.messageOf(err));
+            }
+        });
     }
 }

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-footer',
@@ -11,6 +12,9 @@ import { RouterModule } from '@angular/router';
 })
 export class FooterComponent {
   currentYear = new Date().getFullYear();
+  brand = environment.brandName;
+  contactEmail = environment.contactEmail;
+  contactWhatsapp = environment.contactWhatsapp.replace(/\D/g, '');
   deferredPrompt: any;
   showInstallButton = false;
 
@@ -29,11 +33,6 @@ export class FooterComponent {
     if (this.deferredPrompt) {
         this.deferredPrompt.prompt();
         this.deferredPrompt.userChoice.then((choiceResult: any) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            } else {
-                console.log('User dismissed the install prompt');
-            }
             this.deferredPrompt = null;
             this.showInstallButton = false;
         });

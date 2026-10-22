@@ -1,224 +1,192 @@
 <div class="wizard-container">
     <div class="wizard-header">
-        <button (click)="router.navigate(['/dashboard'])" class="back-btn">← Back</button>
-        <span>Step {{ currentStep }} of 6</span>
+        <button type="button" (click)="router.navigate(['/dashboard'])" class="back-btn">← Volver al panel</button>
+        <span>Paso {{ currentStep }} de {{ totalSteps }}</span>
     </div>
 
     <form [formGroup]="eventForm" (ngSubmit)="onSubmit()">
 
-        <!-- Step 1: Event Type -->
+        <!-- Paso 1: ubicaciones -->
         <div *ngIf="currentStep === 1" class="wizard-step">
-            <h2>Choose Event Type</h2>
-            <div class="options-grid">
-                <label class="option-card" [class.selected]="eventForm.get('eventType')?.value === 'sale'">
-                    <input type="radio" formControlName="eventType" value="sale">
-                    <h3>🎟️ With Sales</h3>
-                    <p>Define price and stock. Sell via Ticketera.</p>
-                </label>
-                <label class="option-card" [class.selected]="eventForm.get('eventType')?.value === 'invite'">
-                    <input type="radio" formControlName="eventType" value="invite">
-                    <h3>📩 Invite Only</h3>
-                    <p>Ideal for private or corporate events.</p>
-                </label>
-            </div>
-        </div>
-
-        <!-- Step 2: Seating -->
-        <div *ngIf="currentStep === 2" class="wizard-step">
-            <h2>Seating Arrangement</h2>
+            <h2>¿Cómo son las ubicaciones?</h2>
             <div class="options-grid">
                 <label class="option-card" [class.selected]="eventForm.get('hasNumberedSeating')?.value === false">
                     <input type="radio" formControlName="hasNumberedSeating" [value]="false">
-                    <h3>❌ No Numbered Seats</h3>
-                    <p>General admission (Standing, Parties, etc.)</p>
+                    <h3>🎉 Sin numerar</h3>
+                    <p>Entrada general: fiestas, recitales de pie, ferias.</p>
                 </label>
                 <label class="option-card" [class.selected]="eventForm.get('hasNumberedSeating')?.value === true">
                     <input type="radio" formControlName="hasNumberedSeating" [value]="true">
-                    <h3>✅ Numbered Seats</h3>
-                    <p>Theaters, Cinemas, Stadiums.</p>
+                    <h3>💺 Numeradas</h3>
+                    <p>Teatros, cines, salones con butacas. Cada comprador elige su lugar.</p>
                 </label>
             </div>
         </div>
 
-        <!-- Step 3: Payment Methods -->
-        <div *ngIf="currentStep === 3" class="wizard-step">
-            <h2>Payment Methods</h2>
+        <!-- Paso 2: cobro -->
+        <div *ngIf="currentStep === 2" class="wizard-step">
+            <h2>¿Cómo vas a cobrar?</h2>
             <div class="options-list" formGroupName="paymentMethods">
                 <label class="checkbox-card">
-                    <input type="checkbox" formControlName="mercadoPago"> MercadoPago
+                    <input type="checkbox" formControlName="mercadoPago">
+                    <span><strong>Mercado Pago</strong><br><small>Tarjetas y dinero en cuenta. Las entradas se emiten solas al pagar.</small></span>
                 </label>
                 <label class="checkbox-card">
-                    <input type="checkbox" formControlName="transfer"> Cash / Bank Transfer
+                    <input type="checkbox" formControlName="transfer">
+                    <span><strong>Transferencia o efectivo</strong><br><small>El comprador reserva y vos aprobás la venta cuando recibís el pago.</small></span>
                 </label>
             </div>
-            <div *ngIf="eventForm.get('paymentMethods')?.invalid && eventForm.get('paymentMethods')?.touched"
-                class="error-msg">
-                Please select at least one payment method.
+            <div *ngIf="eventForm.get('paymentMethods')?.invalid && eventForm.get('paymentMethods')?.touched" class="error-msg">
+                Elegí al menos una forma de cobro.
+            </div>
+            <div class="form-group" *ngIf="transferSelected">
+                <label>Datos para transferir o dónde pagar</label>
+                <textarea formControlName="paymentInstructions" rows="3"
+                    placeholder="Alias: producciones.litoral — CBU 0000… — Titular: … / En efectivo en Av. … de 10 a 18 h"></textarea>
+                <small class="hint">Se le muestra al comprador después de reservar. Pedile que te mande el comprobante.</small>
             </div>
         </div>
 
-        <!-- Step 4: Basic Info -->
-        <div *ngIf="currentStep === 4" class="wizard-step">
-            <h2>Event Details</h2>
+        <!-- Paso 3: datos -->
+        <div *ngIf="currentStep === 3" class="wizard-step">
+            <h2>Datos del evento</h2>
             <div class="form-group">
-                <label>Event Title</label>
-                <input type="text" formControlName="title" placeholder="e.g. Summer Festival 2025" maxlength="50"
-                    (input)="0">
+                <label>Nombre del evento</label>
+                <input type="text" formControlName="title" placeholder="Ej.: Fiesta de la Primavera" maxlength="80">
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 4px;">
-                    <span *ngIf="eventForm.get('title')?.invalid && eventForm.get('title')?.touched" class="error-msg"
-                        style="margin: 0;">
-                        <span *ngIf="eventForm.get('title')?.hasError('required')">Title is required.</span>
-                    </span>
-                    <span style="color: #666; margin-left: auto;">
-                        {{ eventForm.get('title')?.value?.length || 0 }}/50
-                    </span>
+                    <span *ngIf="eventForm.get('title')?.invalid && eventForm.get('title')?.touched" class="error-msg" style="margin: 0;">El nombre es obligatorio.</span>
+                    <span style="color: #666; margin-left: auto;">{{ eventForm.get('title')?.value?.length || 0 }}/80</span>
                 </div>
             </div>
             <div class="form-group">
-                <label>Location</label>
-                <input formControlName="location" type="text" placeholder="Venue Name">
-                <span *ngIf="eventForm.get('location')?.invalid && eventForm.get('location')?.touched"
-                    class="error-msg">Location is required.</span>
+                <label>Lugar</label>
+                <input formControlName="location" type="text" placeholder="Ej.: Club Ferrocarril, Concordia">
+                <span *ngIf="eventForm.get('location')?.invalid && eventForm.get('location')?.touched" class="error-msg">Indicá dónde es.</span>
             </div>
-
             <div class="form-group">
-                <label>Category</label>
+                <label>Categoría</label>
                 <select formControlName="category">
-                    <option value="Concert">Concert</option>
-                    <option value="Theater">Theater</option>
-                    <option value="Party">Party</option>
-                    <option value="Sports">Sports</option>
-                    <option value="Other">Other</option>
+                    <option *ngFor="let c of categories" [value]="c.value">{{ c.icon }} {{ c.label }}</option>
                 </select>
-                <span *ngIf="eventForm.get('category')?.invalid && eventForm.get('category')?.touched"
-                    class="error-msg">Category is required.</span>
             </div>
-
             <div class="form-group">
-                <label>Date & Time</label>
+                <label>Fecha y hora</label>
                 <input type="datetime-local" formControlName="date">
-                <span *ngIf="eventForm.get('date')?.hasError('required') && eventForm.get('date')?.touched"
-                    class="error-msg">Date is required.</span>
-                <span *ngIf="eventForm.get('date')?.hasError('pastDate') && eventForm.get('date')?.touched"
-                    class="error-msg">Date cannot be in the past.</span>
+                <span *ngIf="eventForm.get('date')?.hasError('required') && eventForm.get('date')?.touched" class="error-msg">Elegí la fecha.</span>
+                <span *ngIf="eventForm.get('date')?.hasError('pastDate') && eventForm.get('date')?.touched" class="error-msg">La fecha tiene que ser futura.</span>
             </div>
             <div class="form-group">
-                <label>Image URL</label>
-                <input type="text" formControlName="imageUrl" placeholder="https://...">
+                <label>Imagen (link, opcional)</label>
+                <input type="url" formControlName="imageUrl" placeholder="https://… (flyer horizontal)">
             </div>
             <div class="form-group">
-                <label>Description</label>
-                <textarea formControlName="description" rows="4"></textarea>
+                <label>Descripción</label>
+                <textarea formControlName="description" rows="4" placeholder="Quiénes tocan, horario de apertura, edad mínima, qué incluye la entrada…"></textarea>
             </div>
         </div>
 
-        <!-- Step 5: Batches -->
-        <div *ngIf="currentStep === 5" class="wizard-step">
-            <h2>Ticket Batches & Pricing</h2>
-            <p style="color: #666; margin-bottom: 20px;">Define the types of tickets you want to sell.</p>
+        <!-- Paso 4: entradas -->
+        <div *ngIf="currentStep === 4" class="wizard-step">
+            <h2>Entradas y precios</h2>
+            <p style="color: #94a3b8; margin-bottom: 20px;">Podés tener varios tipos: anticipadas, generales, VIP…</p>
 
             <div formArrayName="batches" class="batches-container">
-                <div *ngFor="let batch of batches.controls; let i=index" [formGroupName]="i"
-                    class="batch-card animated-card">
+                <div *ngFor="let batch of batches.controls; let i=index" [formGroupName]="i" class="batch-card animated-card">
                     <div class="batch-header-row">
-                        <h4>Ticket Tier #{{ i + 1 }}</h4>
-                        <button type="button" (click)="removeBatch(i)" class="btn-icon-danger"
-                            title="Remove Batch">✕</button>
+                        <h4>Entrada {{ i + 1 }}</h4>
+                        <button type="button" (click)="removeBatch(i)" class="btn-icon-danger" title="Quitar" aria-label="Quitar este tipo de entrada">✕</button>
                     </div>
 
                     <div class="batch-grid">
                         <div class="input-group">
-                            <label>Name</label>
-                            <input type="text" formControlName="name" placeholder="e.g. Early Bird, VIP">
+                            <label>Nombre</label>
+                            <input type="text" formControlName="name" placeholder="Ej.: Anticipada, VIP">
                         </div>
                         <div class="input-group">
-                            <label>Price ($)</label>
-                            <input type="number" formControlName="price" placeholder="0.00">
+                            <label>Precio ($)</label>
+                            <input type="number" formControlName="price" placeholder="Ej.: 8000" min="0" step="0.01">
+                        </div>
+                        <div class="input-group" *ngIf="!batch.get('hasSeating')?.value">
+                            <label>Cantidad</label>
+                            <input type="number" formControlName="totalQuantity" placeholder="100" min="1">
                         </div>
                         <div class="input-group">
-                            <label>Quantity</label>
-                            <input type="number" formControlName="totalQuantity" placeholder="100">
+                            <label>Cierre de venta (opcional)</label>
+                            <input type="datetime-local" formControlName="salesEndDate">
                         </div>
                     </div>
 
-                    <!-- Seating Configuration -->
                     <div class="batch-grid" *ngIf="eventForm.get('hasNumberedSeating')?.value"
-                        style="margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px;">
+                        style="margin-top: 15px; border-top: 1px dashed #334155; padding-top: 15px;">
                         <div class="input-group">
                             <label style="display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" formControlName="hasSeating"> This tier has assigned seats
+                                <input type="checkbox" formControlName="hasSeating"> Con butacas numeradas
                             </label>
                         </div>
                         <div class="input-group" *ngIf="batch.get('hasSeating')?.value" style="grid-column: 1 / -1;">
-                            <label>Seating Type</label>
-                            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <label>Distribución</label>
+                            <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap: wrap;">
                                 <label style="font-weight:normal; font-size:0.9rem;">
-                                    <input type="radio" formControlName="seatingType" value="grid"> Rectangle Grid
+                                    <input type="radio" formControlName="seatingType" value="grid"> Filas iguales
                                 </label>
                                 <label style="font-weight:normal; font-size:0.9rem;">
-                                    <input type="radio" formControlName="seatingType" value="custom"> Custom Rows (e.g.
-                                    Amphitheater)
+                                    <input type="radio" formControlName="seatingType" value="custom"> Cada fila distinta (anfiteatro)
                                 </label>
                             </div>
                         </div>
 
-                        <!-- Grid Options -->
-                        <ng-container
-                            *ngIf="batch.get('hasSeating')?.value && batch.get('seatingType')?.value === 'grid'">
+                        <ng-container *ngIf="batch.get('hasSeating')?.value && batch.get('seatingType')?.value === 'grid'">
                             <div class="input-group">
-                                <label>Total Rows</label>
-                                <input type="number" formControlName="rows" placeholder="e.g. 10">
+                                <label>Filas</label>
+                                <input type="number" formControlName="rows" min="1" max="60">
                             </div>
                             <div class="input-group">
-                                <label>Seats per Row</label>
-                                <input type="number" formControlName="cols" placeholder="e.g. 20">
+                                <label>Butacas por fila</label>
+                                <input type="number" formControlName="cols" min="1" max="100">
                             </div>
                         </ng-container>
 
-                        <!-- Custom Options -->
-                        <div class="input-group"
-                            *ngIf="batch.get('hasSeating')?.value && batch.get('seatingType')?.value === 'custom'"
-                            style="grid-column: 1 / -1;">
-                            <label>Row Configuration (Comma separated)</label>
-                            <input type="text" formControlName="seatConfig"
-                                placeholder="e.g. 10,12,12,14,14 (Seats in Row A, B, C...)">
-                            <small style="color:#666; display:block; margin-top:4px;">Define number of seats for each
-                                row.</small>
+                        <div class="input-group" *ngIf="batch.get('hasSeating')?.value && batch.get('seatingType')?.value === 'custom'" style="grid-column: 1 / -1;">
+                            <label>Butacas por fila, separadas por coma</label>
+                            <input type="text" formControlName="seatConfig" placeholder="Ej.: 10,12,12,14 (fila A, B, C…)">
                         </div>
+                        <small *ngIf="batch.get('hasSeating')?.value" style="grid-column: 1 / -1; color:#94a3b8;">
+                            Total: {{ seatCount(batch.value) }} butacas a la venta.
+                        </small>
                     </div>
                 </div>
             </div>
 
-            <button type="button" (click)="addBatch()" class="btn-dashed full-width">+ Add Another Ticket Tier</button>
+            <button type="button" (click)="addBatch()" class="btn-dashed full-width">+ Agregar otro tipo de entrada</button>
         </div>
 
-        <!-- Step 6: Review -->
-        <div *ngIf="currentStep === 6" class="wizard-step">
-            <h2>Review & Publish</h2>
+        <!-- Paso 5: revisión -->
+        <div *ngIf="currentStep === 5" class="wizard-step">
+            <h2>Revisá y publicá</h2>
             <div class="review-box">
-                <div class="form-group checkbox-group" style="margin-bottom: 20px;">
+                <h3>{{ eventForm.value.title }}</h3>
+                <p><strong>Lugar:</strong> {{ eventForm.value.location }}</p>
+                <p><strong>Fecha:</strong> {{ eventForm.value.date | date:"EEEE d 'de' MMMM, HH:mm 'h'" }}</p>
+                <p><strong>Cobro:</strong>
+                    {{ eventForm.value.paymentMethods?.mercadoPago ? 'Mercado Pago' : '' }}{{ eventForm.value.paymentMethods?.mercadoPago && transferSelected ? ' y ' : '' }}{{ transferSelected ? 'transferencia/efectivo' : '' }}</p>
+                <p><strong>Entradas:</strong></p>
+                <ul>
+                    <li *ngFor="let b of batches.value">{{ b.name }} — {{ b.price | currency:'ARS':'symbol-narrow':'1.0-2' }} × {{ b.hasSeating ? seatCount(b) : b.totalQuantity }}</li>
+                </ul>
+                <div class="form-group checkbox-group" style="margin-top: 20px;">
                     <label class="checkbox-container">
                         <input type="checkbox" formControlName="isVisible">
-                        <span class="checkmark"></span>
-                        Make event public immediately
+                        Publicarlo ya
                     </label>
-                    <p class="hint">If unchecked, the event will be created as "Hidden" and won't be visible to the
-                        public.</p>
+                    <p class="hint">Si lo dejás sin marcar, queda oculto y lo publicás después desde tu panel.</p>
                 </div>
-                <h3>{{ eventForm.value.title }}</h3>
-                <p><strong>Location:</strong> {{ eventForm.value.location }}</p>
-                <p><strong>Date:</strong> {{ eventForm.value.date | date:'medium' }}</p>
-                <p><strong>Batches:</strong> {{ batches.length }}</p>
             </div>
-            <button type="submit" [disabled]="eventForm.invalid" class="btn btn-primary btn-full">Publish Event</button>
+            <button type="submit" [disabled]="eventForm.invalid || submitting" class="btn btn-primary btn-full">{{ submitting ? 'Creando…' : 'Crear evento' }}</button>
         </div>
 
-        <!-- Navigation -->
         <div class="wizard-nav">
-            <button type="button" (click)="prevStep()" *ngIf="currentStep > 1" class="btn btn-outline">Previous</button>
-            <button type="button" (click)="nextStep()" *ngIf="currentStep < 6" class="btn btn-primary">Next</button>
-            <!-- Submit is inside Step 6 logic via form ngSubmit, but button is there. -->
+            <button type="button" (click)="prevStep()" *ngIf="currentStep > 1" class="btn btn-outline">Anterior</button>
+            <button type="button" (click)="nextStep()" *ngIf="currentStep < totalSteps" class="btn btn-primary">Siguiente</button>
         </div>
-
     </form>
 </div>

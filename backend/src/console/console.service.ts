@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/user.entity';
-import { SERVICE_FEE_RATE } from '../orders/orders.service';
+import { serviceFeeRate } from '../orders/orders.service';
 import { ConsoleSummary, ConsoleTenant, ConsoleTenantStatus } from './console.contract';
 
 /**
@@ -42,7 +42,7 @@ export class ConsoleService {
         email: p.email ?? null,
         plan: 'comisión',
         status,
-        monthlyAmount: status === 'active' && s ? Math.round(s.subtotal * SERVICE_FEE_RATE) : 0,
+        monthlyAmount: status === 'active' && s ? Math.round(s.subtotal * serviceFeeRate()) : 0,
         expiresAt: null,
         createdAt: null,
         usage: { eventos: eventsBy.get(p.id) ?? 0, entradas: s?.entradas ?? 0 },

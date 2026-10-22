@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-privacy',
@@ -21,4 +22,6 @@ import { CommonModule } from '@angular/common';
     li { margin-bottom: 0.5rem; }
   `]
 })
-export class PrivacyComponent {}
+export class PrivacyComponent {
+  brand = environment.brandName;
+}

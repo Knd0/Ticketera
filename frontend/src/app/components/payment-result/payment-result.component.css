@@ -1,0 +1,45 @@
+.result-container { max-width: 720px; margin: 3rem auto; padding: 0 1rem; }
+.result-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  color: #e2e8f0;
+}
+.result-card h2 { margin: 0.5rem 0 1rem; }
+.icon { font-size: 3rem; }
+.muted { color: #94a3b8; }
+.order-id { font-family: monospace; font-size: 0.75rem; color: #64748b; margin-top: 1.5rem; }
+.tickets-list { display: grid; gap: 1rem; margin: 1.5rem 0; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.ticket-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.ticket-card.used { opacity: 0.55; }
+.ticket-info h3 { margin: 0; font-size: 1rem; }
+.ticket-info p { margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.9rem; }
+.used-label { color: #f87171 !important; font-weight: 700; }
+.qr { width: 200px; height: 200px; background: #fff; border-radius: 8px; padding: 8px; }
+.instructions {
+  text-align: left;
+  background: #0f172a;
+  border: 1px dashed #6366f1;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  white-space: pre-line;
+}
+.instructions h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+.spinner {
+  width: 42px; height: 42px; margin: 0 auto 1rem;
+  border: 4px solid #334155; border-top-color: #6366f1; border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -36,6 +38,8 @@ import { Seat } from './events/seat.entity';
       }),
       inject: [ConfigService],
     }),
+    // 120 pedidos por minuto por IP; login, registro y compras tienen límites propios.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     UsersModule,
     AuthModule,
     EventsModule,
@@ -43,6 +47,6 @@ import { Seat } from './events/seat.entity';
     ConsoleModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

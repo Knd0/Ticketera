@@ -184,3 +184,29 @@
 .producer-link:hover {
     text-decoration: underline;
 }
+.category-badge {
+    display: inline-block;
+    background: rgba(99, 102, 241, 0.9);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+}
+.description { white-space: pre-line; }
+.notice { color: #fbbf24; font-size: 0.9rem; margin-bottom: 1rem; }
+.summary small { color: #94a3b8; }
+.qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.buy-btn.disabled { pointer-events: none; opacity: 0.5; }
+
+@media (max-width: 860px) {
+    .content-wrapper { grid-template-columns: 1fr; gap: 1.5rem; }
+    .tickets-sidebar { position: static; order: -1; }
+    .event-header { min-height: 260px; }
+    .header-content h1 { font-size: 2rem; line-height: 1.15; }
+    .producer-card { flex-direction: column; align-items: flex-start; text-align: left; }
+    .batch-info { gap: 1rem; }
+}

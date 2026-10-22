@@ -650,3 +650,25 @@
         display: none;
     }
 }
+.cat-pill.active {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+}
+.price-tag.sold-out { color: #f87171; }
+
+/* Celular: el hero entra completo y las tarjetas se leen enteras. */
+@media (max-width: 768px) {
+    .hero-carousel { height: auto; min-height: 520px; }
+    .carousel-slide { min-height: 520px; }
+    .slide-content { padding: 2rem 1.25rem 3rem !important; }
+    .slide-title { font-size: 2rem; line-height: 1.1; }
+    .slide-meta { flex-direction: column; align-items: flex-start; gap: 0.25rem; font-size: 0.95rem; }
+    .meta-dot { display: none; }
+    .slide-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .carousel-btn { display: none; }
+    .categories-bar { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.5rem; }
+    .cat-pill { flex: 0 0 auto; }
+    .netflix-card { flex: 0 0 200px; height: 260px; }
+    .main-content.container { padding-left: 1rem; padding-right: 1rem; }
+}

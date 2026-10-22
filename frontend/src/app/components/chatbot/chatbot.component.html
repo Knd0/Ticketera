@@ -1,7 +1,7 @@
 <div class="chatbot-container" [class.open]="isOpen">
 
     <!-- Trigger Button -->
-    <button class="chat-trigger" (click)="toggleChat()">
+    <button class="chat-trigger" (click)="toggleChat()" [attr.aria-label]="isOpen ? 'Cerrar ayuda' : 'Abrir ayuda'">
         <span *ngIf="!isOpen">💬</span>
         <span *ngIf="isOpen">✕</span>
         <div class="unread-badge" *ngIf="hasUnread && !isOpen"></div>
@@ -11,10 +11,10 @@
     <div class="chat-window" *ngIf="isOpen">
         <div class="chat-header">
             <div class="bot-info">
-                <div class="bot-avatar">🤖</div>
+                <div class="bot-avatar">💬</div>
                 <div>
-                    <h3>BI-Tickets AI</h3>
-                    <span class="status">Online</span>
+                    <h3>Ayuda</h3>
+                    <span class="status">Respuestas al instante</span>
                 </div>
             </div>
         </div>
@@ -25,7 +25,7 @@
                 <div class="bubble">
                     {{ msg.text }}
                 </div>
-                <div class="timestamp">{{ msg.timestamp | date:'shortTime' }}</div>
+                <div class="timestamp">{{ msg.timestamp | date:'HH:mm' }}</div>
 
                 <!-- Quick Actions -->
                 <div class="actions" *ngIf="msg.actions">
@@ -43,8 +43,8 @@
         </div>
 
         <div class="chat-input-area">
-            <input type="text" [(ngModel)]="userInput" (keyup.enter)="sendMessage()" placeholder="Type a message..." />
-            <button (click)="sendMessage()" [disabled]="!userInput.trim()">➤</button>
+            <input type="text" [(ngModel)]="userInput" (keyup.enter)="sendMessage()" placeholder="Escribí tu consulta o el nombre de un evento…" />
+            <button (click)="sendMessage()" [disabled]="!userInput.trim()" aria-label="Enviar">➤</button>
         </div>
     </div>
 </div>

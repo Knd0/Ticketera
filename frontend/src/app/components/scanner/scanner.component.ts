@@ -10,20 +10,22 @@ import { environment } from '../../../environments/environment';
   imports: [CommonModule],
   template: `
     <div class="scanner-container">
-      <h2 class="title">Ticket Scanner</h2>
+      <h2 class="title">Control de acceso</h2>
+      <p class="hint" *ngIf="!scanResult">Apuntá la cámara al QR de la entrada. Cada entrada se puede usar una sola vez.</p>
       
       <div id="reader" class="scanner-box"></div>
 
       <div *ngIf="scanResult" class="result-box"
            [class.valid]="scanResult.valid"
            [class.invalid]="!scanResult.valid">
+        <div class="result-icon">{{ scanResult.valid ? '✅' : '⛔' }}</div>
         <h3 class="result-title">{{ scanResult.message }}</h3>
         <div *ngIf="scanResult.data" class="result-details">
-          <p><strong>Holder:</strong> {{ scanResult.data.holder }}</p>
-          <p><strong>Event:</strong> {{ scanResult.data.event }}</p>
-          <p><strong>Tier:</strong> {{ scanResult.data.tier }}</p>
+          <p *ngIf="scanResult.data.holder"><strong>Titular:</strong> {{ scanResult.data.holder }}</p>
+          <p *ngIf="scanResult.data.event"><strong>Evento:</strong> {{ scanResult.data.event }}</p>
+          <p *ngIf="scanResult.data.tier"><strong>Entrada:</strong> {{ scanResult.data.tier }}</p>
         </div>
-        <button (click)="resetScan()" class="btn-reset">Scan Next</button>
+        <button (click)="resetScan()" class="btn-reset">Escanear la siguiente</button>
       </div>
     </div>
   `,
@@ -34,8 +36,10 @@ import { environment } from '../../../environments/environment';
         padding: 1rem;
         min-height: 80vh; 
     }
-    .title { text-align: center; margin-bottom: 1rem; font-size: 1.5rem; }
-    .scanner-box { margin-bottom: 1.5rem; border: 1px solid #ddd; radius: 8px; overflow: hidden; }
+    .title { text-align: center; margin-bottom: 0.5rem; font-size: 1.5rem; }
+    .hint { text-align: center; color: #94a3b8; margin-bottom: 1rem; }
+    .result-icon { font-size: 3.5rem; }
+    .scanner-box { margin-bottom: 1.5rem; border: 1px solid #334155; border-radius: 8px; background: #fff; color: #111; overflow: hidden; }
     
     .result-box {
         padding: 1.5rem;
@@ -88,7 +92,6 @@ export class ScannerComponent implements OnInit, OnDestroy {
   onScanSuccess(decodedText: string, decodedResult: any) {
     if (!this.isScanning) return;
     
-    console.log(`Scan result: ${decodedText}`, decodedResult);
     this.isScanning = false;
     this.scanner.clear();
 
@@ -102,13 +105,14 @@ export class ScannerComponent implements OnInit, OnDestroy {
   }
 
   validateTicket(token: string) {
-      this.http.get<any>(`${environment.apiUrl}/tickets/validate/${token}`).subscribe({
+      this.http.get<any>(`${environment.apiUrl}/tickets/validate/${encodeURIComponent(token)}`).subscribe({
           next: (res) => {
               this.scanResult = res;
+              // Vibración distinta para entrada válida o rechazada (útil con ruido en la puerta).
+              navigator.vibrate?.(res.valid ? 120 : [80, 60, 80, 60, 200]);
           },
           error: (err) => {
-              this.scanResult = { valid: false, message: 'Network Error or Invalid Response' };
-              console.error(err);
+              this.scanResult = { valid: false, message: err?.status === 0 ? 'Sin conexión: revisá internet y volvé a escanear' : 'No se pudo validar la entrada' };
           }
       });
   }

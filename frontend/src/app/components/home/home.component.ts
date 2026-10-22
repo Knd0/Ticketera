@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { EventsService, Event } from '../../services/events.service';
 import { Observable } from 'rxjs';
 import { RouterLink } from '@angular/router';
+import { CATEGORIES, EVENT_PLACEHOLDER, categoryLabel, isSoldOut, minPrice } from '../../shared/catalog';
 
 @Component({
   selector: 'app-home',
@@ -15,14 +16,13 @@ export class HomeComponent {
   eventsService = inject(EventsService);
   cdr = inject(ChangeDetectorRef);
   
-  categories = [
-    { name: 'Concert', icon: '🎤' },
-    { name: 'Theater', icon: '🎭' },
-    { name: 'Party', icon: '🎉' },
-    { name: 'Sports', icon: '⚽' }
-  ];
-
-  events$ = this.eventsService.getEvents();
+  categories = CATEGORIES;
+  categoryLabel = categoryLabel;
+  minPrice = minPrice;
+  isSoldOut = isSoldOut;
+  placeholder = EVENT_PLACEHOLDER;
+  selectedCategory?: string;
+  loaded = false;
   
   featuredEvents: Event[] = [];
   feedEvents: Event[] = [];
@@ -42,8 +42,11 @@ export class HomeComponent {
   }
 
   loadEvents(category?: string) {
-      this.eventsService.getEvents(category === 'Redo' ? undefined : category).subscribe({
+      this.selectedCategory = category;
+      this.eventsService.getEvents(category).subscribe({
           next: (events) => {
+              this.loaded = true;
+              this.currentSlide = 0;
               // Top 6 as featured for carousel (Full Width)
               this.featuredEvents = events.slice(0, 6);
               // Show ALL events in the feed as requested
@@ -52,11 +55,11 @@ export class HomeComponent {
               this.startAutoPlay();
               this.cdr.detectChanges();
           },
-          error: (err) => console.error('Error loading events', err)
+          error: () => { this.loaded = true; this.cdr.detectChanges(); }
       });
   }
 
-  filterCategory(category: string) {
+  filterCategory(category?: string) {
       this.loadEvents(category);
   }
 
@@ -84,7 +87,7 @@ export class HomeComponent {
       if (this.autoPlayInterval) {
           clearInterval(this.autoPlayInterval);
       }
-      // Auto-advance every 5 seconds
+      if (this.featuredEvents.length < 2) return;
       this.autoPlayInterval = setInterval(() => {
           this.currentSlide = (this.currentSlide + 1) % this.featuredEvents.length;
           this.cdr.detectChanges();

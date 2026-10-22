@@ -1,38 +1,34 @@
 <nav class="navbar">
     <div class="navbar-content">
-        <a routerLink="/" class="brand">BI-Tickets</a>
+        <a routerLink="/" class="brand" (click)="menuOpen = false">{{ brand }}</a>
 
-        <ul class="nav-links">
-            <!-- Common Links -->
-            <li><a routerLink="/" class="nav-link">Home</a></li>
+        <button type="button" class="menu-toggle" (click)="menuOpen = !menuOpen" [attr.aria-expanded]="menuOpen" aria-label="Menú">
+            <i class="fas" [class.fa-bars]="!menuOpen" [class.fa-xmark]="menuOpen"></i>
+        </button>
 
-            <ng-container *ngIf="isLoggedIn$ | async; else publicLinks">
-                <ng-container *ngIf="currentUser$ | async as user">
+        <ul class="nav-links" [class.open]="menuOpen" (click)="menuOpen = false">
+            <li><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">Eventos</a></li>
 
-                    <!-- PRODUCER Links -->
-                    <ng-container *ngIf="user.role === 'producer' || user.role === 'admin'">
-                        <li><a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a></li>
-                        <li><a routerLink="/create-event" routerLinkActive="active" class="nav-link">Create Event</a>
-                        </li>
-                        <li><a routerLink="/scanner" routerLinkActive="active" class="nav-link">Scanner</a></li>
-                    </ng-container>
-
-                    <!-- USER Links -->
-                    <ng-container *ngIf="user.role === 'user'">
-                        <li><a routerLink="/my-tickets" routerLinkActive="active" class="nav-link">My Tickets</a></li>
-                    </ng-container>
-
-                    <li class="user-info">
-                        <span>{{ user.fullName || user.username }} ({{ user.role }})</span>
-                    </li>
+            <ng-container *ngIf="currentUser$ | async as user; else publicLinks">
+                <ng-container *ngIf="user.role === 'producer' || user.role === 'admin'">
+                    <li><a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Mi panel</a></li>
+                    <li><a routerLink="/create-event" routerLinkActive="active" class="nav-link">Crear evento</a></li>
+                    <li><a routerLink="/scanner" routerLinkActive="active" class="nav-link">Control de acceso</a></li>
                 </ng-container>
 
-                <li><button (click)="logout()" class="nav-link logout-btn">Logout</button></li>
+                <ng-container *ngIf="user.role === 'user'">
+                    <li><a routerLink="/my-tickets" routerLinkActive="active" class="nav-link">Mis entradas</a></li>
+                </ng-container>
+
+                <li class="user-info">
+                    <span>{{ user.fullName || user.email }}</span>
+                </li>
+                <li><button (click)="logout()" class="nav-link logout-btn">Salir</button></li>
             </ng-container>
 
             <ng-template #publicLinks>
-                <li><a routerLink="/login" routerLinkActive="active" class="nav-link">Login</a></li>
-                <li><a routerLink="/register" routerLinkActive="active" class="btn btn-primary btn-sm">Register</a></li>
+                <li><a routerLink="/login" routerLinkActive="active" class="nav-link">Ingresar</a></li>
+                <li><a routerLink="/register" routerLinkActive="active" class="btn btn-primary btn-sm">Crear cuenta</a></li>
             </ng-template>
         </ul>
     </div>

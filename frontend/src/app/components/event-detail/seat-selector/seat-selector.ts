@@ -32,11 +32,13 @@ export class SeatSelectorComponent {
       this.loading = true;
       this.http.get<any[]>(`${environment.apiUrl}/seats/${this.batchId}`).subscribe({
           next: (data) => {
-              this.seats = data;
+              // El servidor ordena el número como texto ("10" antes que "2").
+              this.seats = [...data].sort((a, b) => a.row.localeCompare(b.row) || Number(a.number) - Number(b.number));
+              this.selectedSeats = [];
               this.processGrid();
               this.loading = false;
           },
-          error: (err) => console.error(err)
+          error: () => { this.loading = false; this.seats = []; }
       });
   }
 
@@ -53,9 +55,10 @@ export class SeatSelectorComponent {
       if (index > -1) {
           this.selectedSeats.splice(index, 1);
       } else {
+          if (this.selectedSeats.length >= 10) return; // máximo por compra
           this.selectedSeats.push(seat);
       }
-      this.selectionChange.emit(this.selectedSeats);
+      this.selectionChange.emit([...this.selectedSeats]);
   }
 
   isSelected(seat: any) {

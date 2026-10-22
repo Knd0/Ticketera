@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-navbar',
@@ -13,6 +14,8 @@ import { Observable } from 'rxjs';
 })
 export class NavbarComponent {
   authService = inject(AuthService);
+  brand = environment.brandName;
+  menuOpen = false;
   isLoggedIn$: Observable<boolean> = this.authService.isLoggedIn$;
   currentUser$: Observable<any> = this.authService.currentUser$;
 
