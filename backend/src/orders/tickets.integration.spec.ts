@@ -48,7 +48,7 @@ describe('OrdersService Integration - Tickets & Notifications', () => {
             provide: NotificationsService, 
             useValue: { 
                 generateQRCode: jest.fn().mockResolvedValue('data:image/png;base64,...'),
-                sendTicketEmail: jest.fn(),
+                sendTicketsEmail: jest.fn().mockResolvedValue(true),
                 sendTicketWhatsApp: jest.fn()
             } 
         }
@@ -93,18 +93,11 @@ describe('OrdersService Integration - Tickets & Notifications', () => {
           signedToken: 'mock-jwt-token'
       }));
 
-      // 3. Email Sent
-      expect(notificationsService.sendTicketEmail).toHaveBeenCalledWith(
-          'customer@test.com', 
-          'uuid-1', 
-          'data:image/png;base64,...'
-      );
-
-      // 4. WhatsApp Sent
-      expect(notificationsService.sendTicketWhatsApp).toHaveBeenCalledWith(
-          '123456789',
-          'VIP',
-          'data:image/png;base64,...'
-      );
+      // 3. Un solo mail con todas las entradas y su QR
+      expect(notificationsService.sendTicketsEmail).toHaveBeenCalledWith(expect.objectContaining({
+          to: 'customer@test.com',
+          orderId: 'order-1',
+          tickets: [expect.objectContaining({ code: 'uuid-1', qrCode: 'data:image/png;base64,...' })],
+      }));
   });
 });

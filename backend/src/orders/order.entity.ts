@@ -26,13 +26,18 @@ export class Order {
 
   @Column({
     type: 'enum',
-    enum: ['PENDING', 'PAID', 'REFUNDED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'],
+    enum: ['PENDING', 'PAID', 'REFUNDED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'EXPIRED'],
     default: 'PENDING'
   })
   status: string;
 
+  /** Id del pago en Mercado Pago (vacío en efectivo / transferencia). */
   @Column({ nullable: true })
   paymentId: string;
+
+  /** 'MercadoPago' o 'Cash / Bank Transfer'. */
+  @Column({ nullable: true })
+  paymentMethod: string;
 
   @ManyToOne('User', { nullable: true })
   user: any; // Using 'any' as User might cause circular dep again. Or 'User' string token.

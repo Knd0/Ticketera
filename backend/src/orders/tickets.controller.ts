@@ -18,10 +18,10 @@ export class TicketsController {
     @Get('my')
     @UseGuards(AuthGuard('jwt'))
     async getMyTickets(@Request() req: any) {
-        // Si el token no trae email, `{ customerEmail: undefined }` no filtra
-        // nada en TypeORM y devolvería las entradas de todos los clientes.
-        const where: any[] = [{ order: { user: { id: req.user.id } } }];
-        if (req.user.email) where.push({ order: { customerEmail: req.user.email } });
+        // Sólo las órdenes hechas con esta cuenta. Antes también se buscaba por
+        // email, y como el email no se verifica al registrarse, alguien podía
+        // crear una cuenta con el mail de otra persona y ver sus QR.
+        const where = { order: { user: { id: req.user.id } } };
         const tickets = await this.ticketsRepo.find({
             where,
             relations: ['batch', 'batch.event', 'order'],
@@ -68,7 +68,7 @@ export class TicketsController {
             });
 
             if (!ticket) {
-                throw new UnauthorizedException('Ticket not found in system');
+                throw new UnauthorizedException('La entrada no existe.');
             }
 
             // 3. Authorization Check: Does the producer own this event?
@@ -76,14 +76,14 @@ export class TicketsController {
             if (req.user.role !== 'admin') {
                 const eventProducerId = ticket.batch.event.producer?.id;
                 if (eventProducerId !== req.user.id) {
-                    throw new UnauthorizedException('You are not authorized to scan tickets for this event.');
+                    throw new UnauthorizedException('Esta entrada es de un evento que no es tuyo.');
                 }
             }
 
             // Una entrada sólo entra si su orden está pagada (o aprobada por el
             // productor, que también la deja en PAID).
             if (ticket.order?.status !== 'PAID') {
-                return { valid: false, message: 'Order not paid', data: { status: ticket.order?.status } };
+                return { valid: false, message: 'La entrada no está paga', data: { status: ticket.order?.status } };
             }
 
             // Marca la entrada como usada en el mismo paso que la valida. Antes
@@ -95,18 +95,18 @@ export class TicketsController {
                 // Sin `data: ticket`: incluía order.user con el hash de la contraseña del comprador.
                 return {
                     valid: false,
-                    message: 'Ticket already used',
+                    message: 'Esta entrada ya se usó',
                     data: { code: ticket.code, holder: ticket.order?.customerName },
                 };
             }
 
             return {
                 valid: true,
-                message: 'Valid Ticket',
+                message: 'Entrada válida',
                 data: {
                     code: ticket.code,
                     tier: ticket.batch.name,
-                    event: ticket.batch.event?.title || 'Unknown Event',
+                    event: ticket.batch.event?.title || 'Evento',
                     holder: ticket.order?.customerName
                 }
             };
@@ -115,7 +115,7 @@ export class TicketsController {
             if (e instanceof UnauthorizedException) {
                 return { valid: false, message: e.message };
             }
-            return { valid: false, message: 'Invalid Token', error: e.message };
+            return { valid: false, message: 'El código QR no es válido' };
         }
     }
 }

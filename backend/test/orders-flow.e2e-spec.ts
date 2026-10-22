@@ -3,141 +3,115 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { DataSource } from 'typeorm';
-import { Order } from './../src/orders/order.entity';
-import { Ticket } from './../src/orders/ticket.entity';
 import { Batch } from './../src/events/batch.entity';
 import { Event } from './../src/events/event.entity';
 import { NotificationsService } from './../src/notifications/notifications.service';
+import { OrdersService } from './../src/orders/orders.service';
+import { Seat } from './../src/events/seat.entity';
 
-describe('Orders Flow (E2E)', () => {
+/**
+ * Flujo completo contra Postgres real (base ticketera_e2e), con el Mercado Pago
+ * simulado: compra → link de pago → regreso del comprador → entradas con QR.
+ */
+describe('Compra de entradas (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let batchId: string;
+  const mail = { sendTicketsEmail: jest.fn().mockResolvedValue(true), generateQRCode: jest.fn().mockResolvedValue('data:image/png;base64,qr') };
+  const buyer = { name: 'Ana Pérez', email: 'ana@example.com', phone: '3455000000', docId: '30111222' };
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-    .overrideProvider(NotificationsService)
-    .useValue({
-        sendTicketEmail: jest.fn(),
-        sendTicketWhatsApp: jest.fn(),
-        generateQRCode: jest.fn().mockResolvedValue('data:image/png;base64,mock'),
-        createTestAccount: jest.fn() // Just in case
-    })
-    .compile();
-
+    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(NotificationsService).useValue(mail)
+      .compile();
     app = moduleFixture.createNestApplication();
     await app.init();
-
     dataSource = app.get(DataSource);
+    await dataSource.query('TRUNCATE ticket, order_item, "order", seat, batch, event RESTART IDENTITY CASCADE');
 
-    // Setup: Create Event and Batch
-    const event = new Event();
-    event.title = 'E2E Test Event';
-    event.description = 'Test Desc';
-    event.date = new Date();
-    event.location = 'Test Loc';
-    // event.organizerId = 'test-org'; // Removed, does not exist
-    // Create a producer user if needed or leave nullable if allowed? Event.producer is ManyToOne.
-    // Let's assume nullable or create one.
-    // If producer is required we need a user.
-    // Looking at Entity: @ManyToOne('User', 'events') producer: User; No JoinColumn options, likely nullable by default unless strict?
-    // Let's try without setting it first, or set partial.
-    const savedEvent = await dataSource.manager.save(Event, event);
-
-    const batch = new Batch();
-    batch.name = 'General Admission';
-    batch.price = 100;
-    batch.totalQuantity = 100;
-    batch.soldQuantity = 0;
-    batch.event = savedEvent;
-    const savedBatch = await dataSource.manager.save(Batch, batch);
-    batchId = savedBatch.id;
+    const event = await dataSource.manager.save(Event, Object.assign(new Event(), {
+      title: 'Fiesta E2E', description: 'd', location: 'Concordia', isVisible: true,
+      date: new Date(Date.now() + 7 * 86400000), paymentMethods: ['MercadoPago', 'Cash / Bank Transfer'],
+    }));
+    const batch = await dataSource.manager.save(Batch, Object.assign(new Batch(), {
+      name: 'General', price: 1000, totalQuantity: 5, soldQuantity: 0, event,
+    }));
+    batchId = batch.id;
   });
 
   afterAll(async () => {
-    // Cleanup
-    await dataSource.manager.query('DELETE FROM ticket');
-    await dataSource.manager.query('DELETE FROM order_item');
-    await dataSource.manager.query('DELETE FROM "order"'); // "order" is keyword in PG
-    await dataSource.manager.query('DELETE FROM batch');
-    await dataSource.manager.query('DELETE FROM event');
-    
+    await dataSource.query('TRUNCATE ticket, order_item, "order", seat, batch, event RESTART IDENTITY CASCADE');
     await app.close();
   });
 
-  it('/orders (POST) - should create exactly one order and correct number of tickets', async () => {
-    const orderPayload = {
-      items: [
-        { batchId: batchId, quantity: 1 }
-      ],
-      customerInfo: {
-        name: 'Test Buyer',
-        email: 'test@example.com',
-        phone: '123456',
-        docId: '123'
-      }
-    };
+  const sold = async () => (await dataSource.manager.findOneByOrFail(Batch, { id: batchId })).soldQuantity;
 
-    const response = await request(app.getHttpServer())
-      .post('/orders')
-      .send(orderPayload)
+  it('Mercado Pago: la orden queda pendiente y se paga al volver del checkout', async () => {
+    const res = await request(app.getHttpServer()).post('/orders')
+      .send({ items: [{ batchId, quantity: 2 }], customerInfo: buyer, paymentMethod: 'MercadoPago' })
       .expect(201);
 
-    const { order, tickets } = response.body;
+    expect(res.body.order.status).toBe('PENDING');
+    expect(res.body.order.totalAmount).toBe(2300); // 2 × 1000 + 15 % de cargo
+    expect(res.body.tickets).toHaveLength(0);
+    expect(await sold()).toBe(2);
 
-    // API Response Checks
-    expect(order).toBeDefined();
-    expect(tickets).toHaveLength(1);
-    expect(tickets[0].batch.id).toBe(batchId);
+    const url = new URL(res.body.paymentLink);
+    const orderId = url.searchParams.get('orden')!;
+    const estado = await request(app.getHttpServer())
+      .get(`/orders/${orderId}/estado`).query({ payment_id: url.searchParams.get('payment_id') }).expect(200);
 
-    // Database Checks
-    const savedOrder = await dataSource.manager.findOne(Order, { 
-        where: { id: order.id },
-        relations: ['items', 'tickets'] 
-    });
-
-    expect(savedOrder).toBeDefined();
-    expect(savedOrder!.items).toHaveLength(1); // Should be 1 item line
-    expect(savedOrder!.items[0].quantity).toBe(1); // Quantity 1
-    
-    // Check global Tickets count for this order
-    const savedTickets = await dataSource.manager.find(Ticket, { where: { order: { id: order.id } } });
-    expect(savedTickets).toHaveLength(1);
+    expect(estado.body.status).toBe('PAID');
+    expect(estado.body.tickets).toHaveLength(2);
+    expect(estado.body.tickets[0].qrCode).toContain('data:image/png');
+    expect(mail.sendTicketsEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'ana@example.com', eventTitle: 'Fiesta E2E' }));
   });
 
-  it('/orders (POST) - multiple quantity should create correct number of tickets', async () => {
-    const orderPayload = {
-      items: [
-        { batchId: batchId, quantity: 2 }
-      ],
-      customerInfo: {
-        name: 'Test Buyer 2',
-        email: 'test2@example.com',
-        phone: '123456',
-        docId: '123'
-      }
-    };
+  it('sin pagar, la orden vence y las entradas vuelven a la venta', async () => {
+    const before = await sold();
+    const res = await request(app.getHttpServer()).post('/orders')
+      .send({ items: [{ batchId, quantity: 1 }], customerInfo: buyer, paymentMethod: 'MercadoPago' }).expect(201);
+    expect(await sold()).toBe(before + 1);
 
-    const response = await request(app.getHttpServer())
-      .post('/orders')
-      .send(orderPayload)
-      .expect(201);
+    const expired = await app.get(OrdersService).expireUnpaidOrders(new Date(Date.now() + 60 * 60_000));
+    expect(expired).toBe(1);
+    expect(await sold()).toBe(before);
+    const estado = await request(app.getHttpServer()).get(`/orders/${res.body.order.id}/estado`).expect(200);
+    expect(estado.body.status).toBe('EXPIRED');
+  });
 
-    const { order, tickets } = response.body;
+  it('no vende más entradas que el stock', async () => {
+    const left = 5 - (await sold());
+    const res = await request(app.getHttpServer()).post('/orders')
+      .send({ items: [{ batchId, quantity: left + 1 }], customerInfo: buyer, paymentMethod: 'Cash / Bank Transfer' });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/quedan/);
+  });
 
-    expect(tickets).toHaveLength(2);
+  it('efectivo: queda pendiente de aprobación del productor, sin QR', async () => {
+    const res = await request(app.getHttpServer()).post('/orders')
+      .send({ items: [{ batchId, quantity: 1 }], customerInfo: buyer, paymentMethod: 'Cash / Bank Transfer' }).expect(201);
+    expect(res.body.order.status).toBe('PENDING_APPROVAL');
+    const estado = await request(app.getHttpServer()).get(`/orders/${res.body.order.id}/estado`).expect(200);
+    expect(estado.body.tickets).toHaveLength(0);
+  });
 
-    const savedOrder = await dataSource.manager.findOne(Order, { 
-        where: { id: order.id },
-        relations: ['items'] 
-    });
-    
-    expect(savedOrder!.items).toHaveLength(1); // still 1 line item
-    expect(savedOrder!.items[0].quantity).toBe(2);
+  it('butacas: se venden una sola vez y vuelven a estar libres si la orden vence', async () => {
+    const event = await dataSource.manager.findOneByOrFail(Event, { title: 'Fiesta E2E' });
+    const platea = await dataSource.manager.save(Batch, Object.assign(new Batch(), {
+      name: 'Platea', price: 500, totalQuantity: 4, soldQuantity: 0, hasSeating: true, event,
+    }));
+    const seats = await dataSource.manager.save(Seat, ['1', '2'].map(n => Object.assign(new Seat(), { row: 'A', number: n, status: 'AVAILABLE', batch: platea })));
+    const pick = JSON.stringify([{ id: seats[0].id }]);
 
-    const savedTickets = await dataSource.manager.find(Ticket, { where: { order: { id: order.id } } });
-    expect(savedTickets).toHaveLength(2);
+    const first = await request(app.getHttpServer()).post('/orders')
+      .send({ items: [{ batchId: platea.id, quantity: 1, seats: pick }], customerInfo: buyer, paymentMethod: 'MercadoPago' }).expect(201);
+    const again = await request(app.getHttpServer()).post('/orders')
+      .send({ items: [{ batchId: platea.id, quantity: 1, seats: pick }], customerInfo: buyer, paymentMethod: 'MercadoPago' });
+    expect(again.status).toBe(409);
+
+    await app.get(OrdersService).releaseOrder(first.body.order.id, 'EXPIRED');
+    expect((await dataSource.manager.findOneByOrFail(Seat, { id: seats[0].id })).status).toBe('AVAILABLE');
+    expect((await dataSource.manager.findOneByOrFail(Batch, { id: platea.id })).soldQuantity).toBe(0);
   });
 });

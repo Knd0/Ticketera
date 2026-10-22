@@ -1,81 +1,101 @@
-import { Controller, Post, Body, UseGuards, Request, Param, Injectable, NotFoundException } from '@nestjs/common';
-import { isMockPaymentsEnabled } from '../common/secrets';
+import { Inject, Controller, Post, Get, Body, UseGuards, Request, Param, Query, Headers, HttpCode, UnauthorizedException, ParseUUIDPipe, Logger } from '@nestjs/common';
 import { OrdersService } from './orders.service';
+import type { PaymentProvider } from './payments/payment.provider';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
+import { OptionalJwtAuthGuard, ProducerGuard } from '../common/guards';
 
-@Injectable()
-export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
-    handleRequest(err, user, info) {
-        // No error if no user
-        return user;
-    }
-}
 
 @Controller('orders')
 export class OrdersController {
-    constructor(private readonly ordersService: OrdersService) { }
+    private readonly logger = new Logger(OrdersController.name);
 
+    constructor(
+        private readonly ordersService: OrdersService,
+        @Inject('PaymentProvider') private readonly paymentProvider: PaymentProvider,
+    ) { }
+
+    @Throttle({ default: { limit: 20, ttl: 60_000 } })
     @Post()
     @UseGuards(OptionalJwtAuthGuard)
-    create(@Body() createOrderDto: any, @Request() req: any) {
-        if (req.user) {
-            createOrderDto.user = req.user;
-        }
-        return this.ordersService.createOrder(createOrderDto);
+    create(@Body() body: any, @Request() req: any) {
+        // Sólo se toman los campos del carrito: el comprador no puede fijar
+        // estado, montos ni a qué usuario queda asociada la orden.
+        return this.ordersService.createOrder({
+            items: body?.items,
+            customerInfo: body?.customerInfo,
+            promoCode: body?.promoCode,
+            paymentMethod: body?.paymentMethod,
+            user: req.user,
+        });
     }
 
+    /**
+     * Notificaciones de Mercado Pago (webhooks e IPN). Se verifica la firma si
+     * hay MP_WEBHOOK_SECRET y, en todos los casos, el pago se consulta a
+     * Mercado Pago antes de emitir entradas. Responde 200 para que MP no reintente
+     * notificaciones que no nos interesan.
+     */
     @Post('webhook/mercadopago')
-    async handleWebhook(@Body() body: any) {
-        // Webhook de mentira: marca como pagada cualquier orden que reciba, sin
-        // verificar firma ni consultar a Mercado Pago. Sólo existe en modo demo;
-        // en producción respondía a cualquiera y regalaba entradas.
-        if (!isMockPaymentsEnabled()) {
-            throw new NotFoundException();
+    @HttpCode(200)
+    async handleWebhook(@Body() body: any, @Query() query: any, @Headers() headers: Record<string, any>) {
+        const type = query?.type || query?.topic || body?.type || body?.topic;
+        const dataId = String(query?.['data.id'] || body?.data?.id || query?.id || '');
+        if (type !== 'payment' || !dataId) return { received: true };
+
+        if (!this.paymentProvider.verifyWebhookSignature(headers, dataId)) {
+            throw new UnauthorizedException('Firma inválida.');
         }
-        if (body?.status === 'approved' && body?.id) {
-            await this.ordersService.confirmPayment(body.id);
+        try {
+            const result = await this.ordersService.handlePaymentNotification(dataId);
+            return { received: true, ...result };
+        } catch (err) {
+            // 500 → Mercado Pago reintenta más tarde.
+            this.logger.error(`Webhook de Mercado Pago (pago ${dataId}) falló`, err as Error);
+            throw err;
         }
-        return { received: true };
     }
 
+    /** Estado de una orden para la página de resultado del pago. */
+    @Get(':id/estado')
+    getPublicOrder(@Param('id', ParseUUIDPipe) id: string, @Query('payment_id') paymentId?: string) {
+        return this.ordersService.getPublicOrder(id, paymentId || undefined);
+    }
+
+    @Throttle({ default: { limit: 10, ttl: 60_000 } })
     @Post('validate-promo')
     async validatePromo(@Body('code') code: string) {
-        const promo = await this.ordersService.validatePromoCode(code);
-        return {
-            valid: true,
-            discountPercentage: promo.discountPercentage,
-            code: promo.code
-        };
+        const promo = await this.ordersService.validatePromoCode(String(code ?? '').trim());
+        return { valid: true, discountPercentage: promo.discountPercentage, code: promo.code };
     }
 
-    @Post('analytics') // Using POST or GET with User decorator
-    @UseGuards(AuthGuard('jwt'))
+    @Post('analytics')
+    @UseGuards(AuthGuard('jwt'), ProducerGuard)
     async getAnalytics(@Request() req: any) {
-        // req.user.id is the producer
         return this.ordersService.getSalesAnalytics(req.user.id);
     }
 
     @Post('pending')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), ProducerGuard)
     async getPending(@Request() req: any) {
         return this.ordersService.getPendingOrders(req.user.id);
     }
 
     @Post('event/:id/pending')
-    @UseGuards(AuthGuard('jwt'))
-    async getEventPending(@Request() req: any, @Param('id') eventId: string) {
+    @UseGuards(AuthGuard('jwt'), ProducerGuard)
+    async getEventPending(@Request() req: any, @Param('id', ParseUUIDPipe) eventId: string) {
         return this.ordersService.getEventReservations(eventId, req.user.id);
     }
 
     @Post(':id/approve')
-    @UseGuards(AuthGuard('jwt'))
-    async approve(@Request() req: any, @Param('id') id: string) {
+    @UseGuards(AuthGuard('jwt'), ProducerGuard)
+    async approve(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
         return this.ordersService.approveOrder(id, req.user.id);
     }
 
     @Post(':id/reject')
-    @UseGuards(AuthGuard('jwt'))
-    async reject(@Request() req: any, @Param('id') id: string) {
+    @UseGuards(AuthGuard('jwt'), ProducerGuard)
+    async reject(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
         return this.ordersService.rejectOrder(id, req.user.id);
     }
 }

@@ -29,7 +29,7 @@ export class UsersService {
         return await this.usersRepository.save(newUser);
     } catch (error) {
         if (error.code === '23505') { // Postgres duplicate key error code
-            throw new ConflictException('Username or Email already exists');
+            throw new ConflictException('Ya existe una cuenta con ese email.');
         }
         throw error;
     }

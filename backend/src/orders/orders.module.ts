@@ -10,6 +10,8 @@ import { Ticket } from './ticket.entity';
 import { Batch } from '../events/batch.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { MercadoPagoProvider } from './payments/mercadopago.provider';
+import { MockPaymentProvider } from './payments/mock-payment.provider';
+import { isMockPaymentsEnabled } from '../common/secrets';
 
 import { PromoCode } from './promo-code.entity';
 
@@ -32,8 +34,9 @@ import { Seat } from '../events/seat.entity';
   providers: [
     OrdersService,
     {
+      // ENABLE_MOCK_PAYMENTS=true usa un Mercado Pago simulado (sólo desarrollo).
       provide: 'PaymentProvider',
-      useClass: MercadoPagoProvider
+      useFactory: () => (isMockPaymentsEnabled() ? new MockPaymentProvider() : new MercadoPagoProvider()),
     }
   ],
   exports: [OrdersService],
